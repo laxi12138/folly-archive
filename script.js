@@ -1627,13 +1627,17 @@ function flyToSite(site, index) {
     m.marker.closePopup()
   );
 
-  map.flyTo(pos, 2, {
+      map.flyTo(pos, 1.5, {
+        duration: 1.5,
+        easeLinearity: 0.2
+    });
 
-    duration: 2.5,
-
-    easeLinearity: 0.2
-
-  });
+    setTimeout(() => {
+        map.flyTo(pos, 4.5, {
+            duration: 1.2,
+            easeLinearity: 0.2
+        });
+    }, 1500);
 
   map.once('moveend', () => {
 
