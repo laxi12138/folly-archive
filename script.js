@@ -1628,13 +1628,13 @@ function flyToSite(site, index) {
   );
 
       map.flyTo(pos, 3, {
-        duration: 3,
+        duration: 4,
         easeLinearity: 0.2
     });
 
     setTimeout(() => {
-        map.flyTo(pos, 6, {
-            duration: 2,
+        map.flyTo(pos, 5, {
+            duration: 4,
             easeLinearity: 0.2
         });
     }, 1500);
