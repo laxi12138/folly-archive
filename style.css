@@ -2004,12 +2004,8 @@ font-weight: 500;
   }
 
 }
-/* ==========================================================
-   移动端全局适配：强制 1:1 窗口、不被挤压、微缩极小字体
-   ========================================================== */
-
 @media screen and (max-width: 768px) {
-    /* 1. 附件查看器背景与整体撑满屏幕，但绝对隐藏溢出 */
+    /* 1. 调整背景遮罩：不要太黑，保留一点通透感，或者使用毛玻璃效果 */
     .attachment-viewer {
         position: fixed;
         inset: 0;
@@ -2018,27 +2014,33 @@ font-weight: 500;
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow: hidden; /* 核心：防止内部代码或DOM直接跳出屏幕 */
-        background: rgba(0, 0, 0, 0.85);
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.65); /* 调低黑色浓度，避免屏幕整体死黑 */
         z-index: 9999;
     }
 
-    /* 2. 内部主窗口：强制锁死一个标准的 1:1 或固定大宽高比例（例如 1000px * 1000px） */
+    /* 2. 修正主屏幕框（Inner）：使其在缩放后依然能正确撑满并居中 */
     .attachment-viewer-inner {
-        position: relative;
-        width: 900px;  /* 你的设计基准宽度 */
-        height: 900px; /* 你的设计基准高度（1:1 正方形窗口） */
-        max-width: none;
-        max-height: none;
-        /* 使用 transform scale 动态缩小适配手机屏幕，实现“字体变小、排版绝不挤压” */
-        transform: scale(0.38); /* 可根据手机实际观感在 0.3 ~ 0.45 之间微调 */
-        transform-origin: center center;
-        background: #111; /* 根据你的主题色调整 */
-        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        position: absolute;
+        /* 恢复为响应式百分比或根据你的设计稿设定基准尺寸 */
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 1000px;
+        max-height: 1000px;
+        
+        /* 核心：确保它在 flex 容器中完美居中，不受外部错位影响 */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        
+        /* 如果你要用 transform scale，请确保原点在中心，且宽高有明确定义 */
+        transform: none; /* 移动端直接用 100vw/100vh 适配比强行 scale 更稳妥，防止布局坍塌 */
+        background: transparent; /* 避免多重背景叠加变黑 */
         overflow: hidden;
     }
 
-    /* 3. 针对媒体包裹层及各类文本/PDF/图片的容器约束 */
+    /* 3. 内部媒体与内容容器填满主框 */
     #media-wrapper {
         width: 100%;
         height: 100%;
@@ -2049,11 +2051,11 @@ font-weight: 500;
         overflow: hidden;
     }
 
-    /* 4. 确保 HUD、关闭按钮和各种控制面板不会因为整体缩放而错位 */
-    .attachment-hud {
-        /* 如果需要，可单独放大 HUD 的字体或调整其在缩放视口中的绝对位置 */
-        transform: scale(1.5); /* 补偿外层的整体缩小，保证按钮依然可以被手指点按 */
-        transform-origin: top right;
+    /* 4. 底部或顶部的控制栏（如截图下方的菜单栏）文字和交互修正 */
+    .attachment-hud, 
+    .viewer-toolbar {
+        transform: none;
+        font-size: 14px; /* 确保菜单文字清晰可读 */
     }
 }
 
