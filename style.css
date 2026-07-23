@@ -2004,51 +2004,56 @@ font-weight: 500;
   }
 
 }
-/* ========================================================
-   移动端 Attachment Viewer 强制 1:1 & 防挤压适配
-======================================================== */
+/* ==========================================================
+   移动端全局适配：强制 1:1 窗口、不被挤压、微缩极小字体
+   ========================================================== */
+
 @media screen and (max-width: 768px) {
-
-    /* 1. 强制媒体外层容器为 1:1 正方形 */
-    #media-wrapper {
-        width: 100% !important;
-        max-width: 100vw !important;
-        aspect-ratio: 1 / 1 !important; /* 强制 1:1 比例 */
-        position: relative;
-        overflow: hidden; /* 防止内部元素溢出屏幕 */
+    /* 1. 附件查看器背景与整体撑满屏幕，但绝对隐藏溢出 */
+    .attachment-viewer {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: calc(var(--vh, 1vh) * 100);
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
+        overflow: hidden; /* 核心：防止内部代码或DOM直接跳出屏幕 */
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 9999;
     }
 
-    /* 2. 文本类 iframe 的防挤压缩放魔法 */
-    .archive-text-frame {
-        /* 给一个巨大的固定宽高，骗过 iframe 内部，确保排版绝对不被挤压 */
-        width: 1000px !important; 
-        height: 1000px !important;
-        
-        /* 绝对定位到左上角 */
-        position: absolute;
-        top: 0;
-        left: 0;
-        
-        /* 设置缩放基准点为左上角 */
-        transform-origin: top left;
-        
-        /* 核心：将 1000px 的画面强行缩小到手机屏幕宽度 (假设屏幕宽 100vw) */
-        transform: scale(calc(100vw / 1000)) !important;
-        
-        /* 确保内容本身可滚动，并移除边框 */
-        border: none;
-        overflow-y: auto;
+    /* 2. 内部主窗口：强制锁死一个标准的 1:1 或固定大宽高比例（例如 1000px * 1000px） */
+    .attachment-viewer-inner {
+        position: relative;
+        width: 900px;  /* 你的设计基准宽度 */
+        height: 900px; /* 你的设计基准高度（1:1 正方形窗口） */
+        max-width: none;
+        max-height: none;
+        /* 使用 transform scale 动态缩小适配手机屏幕，实现“字体变小、排版绝不挤压” */
+        transform: scale(0.38); /* 可根据手机实际观感在 0.3 ~ 0.45 之间微调 */
+        transform-origin: center center;
+        background: #111; /* 根据你的主题色调整 */
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        overflow: hidden;
     }
 
-    /* 3. 针对本地 PDF 降级 iframe 的兼容处理 */
-    iframe.attachment-image {
-        width: 100% !important;
-        height: 100% !important;
-        aspect-ratio: 1 / 1 !important;
-        object-fit: contain;
+    /* 3. 针对媒体包裹层及各类文本/PDF/图片的容器约束 */
+    #media-wrapper {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* 4. 确保 HUD、关闭按钮和各种控制面板不会因为整体缩放而错位 */
+    .attachment-hud {
+        /* 如果需要，可单独放大 HUD 的字体或调整其在缩放视口中的绝对位置 */
+        transform: scale(1.5); /* 补偿外层的整体缩小，保证按钮依然可以被手指点按 */
+        transform-origin: top right;
     }
 }
 
