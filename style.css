@@ -2004,107 +2004,71 @@ font-weight: 500;
   }
 
 }
-/* ========================================
-   MOBILE  WER SYSTEM
-======================================== */
-
 @media (max-width: 768px) {
-
-  /* =========================
-     1. 构建横版限制框 (核心修复)
-  ========================= */
+  /* 1. 强制重置遮罩层：确保弹窗整体居中并撑满屏幕 */
   .attachment-viewer {
-    padding: 12px;
-    justify-content: center;
-    align-items: center; /* 确保整体居中 */
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.85) !important; /* 加个深色半透明背景，防止背景文字透过来 */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999 !important;
+    box-sizing: border-box !important;
+    padding: 16px !important;
   }
 
+  /* 2. 强制重置内部核心卡片：锁定横版限制框 */
   .attachment-viewer-inner {
-    width: calc(100vw - 24px); /* 适应手机宽度并保留左右边距 */
-    max-width: 100%;
-    height: auto;
-    
-    /* 清除原本错误的垂直拉伸设置 */
-    min-height: auto; 
-    
-    /* 强制锁定为一个接近横屏的比例框 (例如 4:3) */
-    aspect-ratio: 4 / 3; 
-    padding: 14px;
-    
-    /* 启用 Flex 布局以严格控制内部空间分配 */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* 防止任何子元素突破边框 */
+    position: relative !important;
+    width: 100% !important;
+    max-width: 420px !important; /* 限制在手机上舒适的宽度 */
+    height: auto !important;
+    max-height: 80vh !important;
+    aspect-ratio: 4 / 3 !important; /* 强制横屏比例 */
+    background: #111 !important; /* 给个底色防止透明叠加 */
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
   }
 
-  /* =========================
-     2. 限制舞台与媒体尺寸
-  ========================= */
+  /* 3. 媒体舞台区 */
   .attachment-stage {
-    flex: 1; /* 占据除了文字外的所有剩余空间 */
-    min-height: 0; /* 防止 flex 子项在某些浏览器中溢出 */
-    width: 100%;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex: 1 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 8px !important;
   }
 
   .attachment-image,
   .attachment-video {
-    width: 100%;
-    height: 100%;
-    /* 清除原本的 70vh 限制 */
-    max-height: 100%; 
-    object-fit: contain; /* 保证图片等比缩放完整显示 */
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
   }
 
-  /* =========================
-     3. 驯服简介文本 (防止弹满屏幕)
-  ========================= */
+  /* 4. 简介文本区：绝对不许撑破 */
   .attachment-desc {
-    font-size: 13px;
-    line-height: 1.6;
-    margin: 0;
-    
-    /* 限制文本区域最大高度，超出部分改为内部滑动 */
-    max-height: 60px; /* 大约显示 3 行文字 */
-    overflow-y: auto; 
-    flex-shrink: 0; /* 防止文本框被媒体文件过度挤压 */
-    
-    /* 优化滚动体验 */
-    padding-right: 6px; 
-    overscroll-behavior: contain; /* 防止滑动文本时触发底层地图滚动 */
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    color: #fff !important;
+    max-height: 45px !important; /* 限制高度约为2-3行 */
+    overflow-y: auto !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
-
-  /* =========================
-     attachment viewer
-  ========================= */
-
-  .attachment-viewer {
-
-    padding: 12px;
-
-    justify-content: center;
-
-  }
-
-  .attachment-viewer-inner {
-
-    width: 100%;
-
-    max-width: 100%;
-
-    height: auto;
-
-    min-height: 60vh;
-
-    aspect-ratio: auto;
-
-    padding: 14px;
-
-  }
 
   /* =========================
      media
