@@ -2011,90 +2011,72 @@ font-weight: 500;
 @media (max-width: 768px) {
 
   /* =========================
-     popup drawer
+     1. 构建横版限制框 (核心修复)
   ========================= */
+  .attachment-viewer {
+    padding: 12px;
+    justify-content: center;
+    align-items: center; /* 确保整体居中 */
+  }
 
-  .drawer {
-
-    width: calc(100vw - 24px);
-
-    max-width: none;
-
+  .attachment-viewer-inner {
+    width: calc(100vw - 24px); /* 适应手机宽度并保留左右边距 */
+    max-width: 100%;
     height: auto;
-
-    max-height: calc(var(--vh) * 100 - 24px);
-
-    left: 12px !important;
-    top: 12px !important;
-
-    overflow-y: auto;
-
-    border: none;
-
-    box-shadow:
-      0 10px 40px rgba(0,0,0,0.12);
-
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-
+    
+    /* 清除原本错误的垂直拉伸设置 */
+    min-height: auto; 
+    
+    /* 强制锁定为一个接近横屏的比例框 (例如 4:3) */
+    aspect-ratio: 4 / 3; 
+    padding: 14px;
+    
+    /* 启用 Flex 布局以严格控制内部空间分配 */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* 防止任何子元素突破边框 */
   }
-
-  @media (max-width: 768px) {
-
-  .drawer {
-
-    transform:
-      translateY(20px)
-      scale(0.98);
-
-  }
-
-  .drawer.open {
-
-    transform:
-      translateY(0)
-      scale(1);
-
-  }
-
-}
-  .drawer-inner {
-
-    padding: 18px;
-
-  }
-    @media (max-width: 768px) {
-
-        #intro-drawer,
-        #main-title,
-        #title-hover-zone,
-        #title-hover-field {
-            display: none !important;
-        }
-    }
 
   /* =========================
-     intro drawer
+     2. 限制舞台与媒体尺寸
   ========================= */
-
-  .intro-drawer {
-
-    width: 100vw;
-
-    height: calc(var(--vh) * 100);
-
-    border-right: none;
-
+  .attachment-stage {
+    flex: 1; /* 占据除了文字外的所有剩余空间 */
+    min-height: 0; /* 防止 flex 子项在某些浏览器中溢出 */
+    width: 100%;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .intro-inner {
-
-    padding:
-      72px
-      24px
-      120px;
-
+  .attachment-image,
+  .attachment-video {
+    width: 100%;
+    height: 100%;
+    /* 清除原本的 70vh 限制 */
+    max-height: 100%; 
+    object-fit: contain; /* 保证图片等比缩放完整显示 */
   }
+
+  /* =========================
+     3. 驯服简介文本 (防止弹满屏幕)
+  ========================= */
+  .attachment-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+    
+    /* 限制文本区域最大高度，超出部分改为内部滑动 */
+    max-height: 60px; /* 大约显示 3 行文字 */
+    overflow-y: auto; 
+    flex-shrink: 0; /* 防止文本框被媒体文件过度挤压 */
+    
+    /* 优化滚动体验 */
+    padding-right: 6px; 
+    overscroll-behavior: contain; /* 防止滑动文本时触发底层地图滚动 */
+  }
+}
 
   /* =========================
      attachment viewer
