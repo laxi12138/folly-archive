@@ -4132,6 +4132,7 @@ cubic-bezier(.2,.8,.2,1);
    Index Layout Disabled State
 ========================= */
 .index-three-columns.disabled,
+.index-conclusion.disabled,
 .index-top-title.disabled {
     color: #888 !important;
     opacity: 0.8; /* 可选：稍微降低透明度让变灰更自然 */
@@ -4140,6 +4141,7 @@ cubic-bezier(.2,.8,.2,1);
 
     /* 如果你的这些容器内部还有特定的文本标签，强制让它们的子元素也变灰 */
     .index-three-columns.disabled *,
+ .index-conclusion.disabled *,
     .index-top-title.disabled * {
         color: #777 !important;
         transition: color 0.2s ease;
