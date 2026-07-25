@@ -5496,7 +5496,7 @@ document.addEventListener("DOMContentLoaded", () => {
         /* ===================================================
            新增：只要有标签被激活，.index-three-columns 和 .index-top-title 一起变灰
            =================================================== */
-        const layoutElements = document.querySelectorAll('.index-three-columns, .index-top-title');
+        const layoutElements = document.querySelectorAll('.index-three-columns, .index-conclusion, .index-top-title');
 
         if (activeTags.length === 0) {
             // 没有选中标签，恢复正常状态
