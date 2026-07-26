@@ -4256,3 +4256,92 @@ cubic-bezier(.2,.8,.2,1);
         column-gap: 0;
     }
 }
+/* ========================================================
+   🌟 遗构馆视窗透视相框 (响应式联动系统)
+   ======================================================== */
+:root {
+    /* 核心：将向内压缩的四个边距定义为全局变量，成为唯一的控制源 */
+    --frame-top: 40px;
+    --frame-bottom: 60px;
+    --frame-left: 230px;
+    --frame-right: 168px;
+}
+
+/* 1. 内部主视窗黑框 */
+#main-viewport-frame {
+    position: fixed;
+    top: var(--frame-top);
+    bottom: var(--frame-bottom);
+    left: var(--frame-left);
+    right: var(--frame-right);
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    z-index: 9;
+    pointer-events: none;
+    /* 加入缓动：当屏幕改变大小或切换设备时，框架会有呼吸感的弹性缩放 */
+    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* 2. 透视切割线通用设定 */
+.perspective-line,
+.drawer-perspective-line {
+    z-index: 9;
+    pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.perspective-line {
+    position: fixed;
+}
+
+/* 抽屉里的底部线条必须是绝对定位，才能跟从抽屉 */
+.drawer-perspective-line {
+    position: absolute;
+    bottom: 0;
+}
+
+/* 统一线条颜色和粗细 */
+.perspective-line line,
+.drawer-perspective-line line {
+    stroke: rgba(0, 0, 0, 0.4);
+    stroke-width: 1;
+}
+
+/* 3. 分配四大角的几何尺寸与定位（全部读取变量！） */
+.perspective-line.top-left {
+    top: 0; left: 0;
+    width: var(--frame-left); height: var(--frame-top);
+}
+.perspective-line.top-right {
+    top: 0; right: 0;
+    width: var(--frame-right); height: var(--frame-top);
+}
+.drawer-perspective-line.bottom-left {
+    left: 0;
+    width: var(--frame-left); height: var(--frame-bottom);
+}
+.drawer-perspective-line.bottom-right {
+    right: 0;
+    width: var(--frame-right); height: var(--frame-bottom);
+}
+
+/* ========================================================
+   📱 透视相框的移动端响应式降级
+   ======================================================== */
+@media (max-width: 1100px) {
+    :root {
+        /* 平板尺寸下：缩小两侧深邃的景深，避免遮挡地图视野 */
+        --frame-left: 120px;
+        --frame-right: 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        /* 手机端尺寸下：由于屏幕太窄，长方形黑框会大幅度收缩，变成一个极简的细边框 */
+        --frame-top: 16px;
+        /* 底部留给抽屉把手 60px 的空间保持不变 */
+        --frame-bottom: 60px; 
+        --frame-left: 16px;
+        --frame-right: 16px;
+    }
+}
