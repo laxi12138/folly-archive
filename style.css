@@ -4146,3 +4146,113 @@ cubic-bezier(.2,.8,.2,1);
         color: #777 !important;
         transition: color 0.2s ease;
     }
+/* ===================================================================
+   🌟 修复：当屏幕宽度小于 1100px 时，缩小抽屉的左右留白（补全你漏掉的括号）
+   =================================================================== */
+@media (max-width: 1100px) {
+    #index-drawer-content {
+        padding: 30px 40px;
+    }
+    #bottom-labels {
+        left: 40px;
+        right: 40px;
+    }
+}
+
+/* ===================================================================
+   🌟 移动端 (竖屏) 核心适配：透视相框压缩 & 卡片 4:5 堆叠缩小
+   =================================================================== */
+@media (max-width: 768px) {
+    
+    /* --------------------------------------
+       1. 顶部透视切割线 / 底部相框向内压缩 (竖状长方形)
+    -------------------------------------- */
+    #top-title {
+        font-size: 14px;          /* 缩小字号 */
+        letter-spacing: 6px;      /* 缩小字间距 */
+        top: 15px;
+    }
+    
+    #coords {
+        top: 36px;                /* 跟随顶部标题上移 */
+    }
+
+    #bottom-labels {
+        left: 20px;               /* 核心：将左右边界向内大幅压缩 */
+        right: 20px;              /* 形成符合竖屏的“4:5 竖状长方形”透视感 */
+        bottom: 20px;
+        font-size: 13px;
+    }
+
+    #bottom-center-label {
+        font-size: 15px;
+        letter-spacing: 6px;
+    }
+    
+    /* 修正底部把手的梯形切割，防止在窄屏上切割线交叉变形 */
+    #index-drawer-handle .frosted-shape {
+        clip-path: polygon(0 100%, 15vw 0, calc(100% - 15vw) 0, 100% 100%);
+    }
+
+    /* --------------------------------------
+       2. Archive-doc 卡片整体缩小，并强制 4:5 比例
+    -------------------------------------- */
+    .archive-doc {
+        width: 144px;             /* 原为 240px，缩小以适应手机屏幕 */
+        height: 180px;            /* 严格保持 4:5 的竖向比例 */
+        padding: 8px;
+    }
+
+    /* 文字内容一并等比缩小排版，避免挤出框外 */
+    .archive-doc .doc-title {
+        font-size: 12px;
+        margin-bottom: 20px !important; /* 缩小原有的过大留白 (66px) */
+    }
+
+    .archive-doc .doc-meta {
+        font-size: 9px;
+        margin-bottom: 20px !important; 
+    }
+    
+    .doc-coord-btn {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+
+    /* --------------------------------------
+       3. 左右卡片堆的基准高度与抽出动画 (针对移动端修正)
+    -------------------------------------- */
+    .position-left {
+        left: -15px;              /* 往屏幕内侧靠 */
+        bottom: 220px;            /* 降低高度，防止在竖屏顶到天花板 */
+    }
+    
+    .position-right {
+        right: -30px;
+        bottom: 80px;             
+    }
+
+    /* 左侧抽出状态修正 (缩小 translateX 距离，防止飞出手机屏幕右侧) */
+    .position-left .archive-doc.extracted {
+        transform: translateX(110px) skewY(-1.5deg) !important; 
+        top: -20px !important;    /* 视觉对齐微调 */
+    }
+
+    /* 右侧抽出状态修正 (防止飞出手机屏幕左侧) */
+    .position-right .archive-doc.extracted {
+        transform: translateX(-110px) skewY(1.5deg) !important;
+        top: -120px !important;   /* 视觉对齐微调 */
+    }
+    
+    /* --------------------------------------
+       4. 底部抽屉内部自适应
+    -------------------------------------- */
+    #index-drawer-content {
+        padding: 30px 20px 20px 20px; /* 抽屉内部边界同样向内压缩 */
+    }
+    
+    .index-three-columns {
+        column-count: 1;          /* 手机上强制变为 1 列，防止排版挤压 */
+        column-gap: 0;
+    }
+}
