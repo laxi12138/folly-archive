@@ -4189,10 +4189,19 @@ cubic-bezier(.2,.8,.2,1);
         letter-spacing: 6px;
     }
     
-    /* 修正底部把手的梯形切割，防止在窄屏上切割线交叉变形 */
+    /* 默认桌面端代码 */
+#index-drawer-handle .frosted-shape {
+    clip-path: polygon(0 100%, 15vw 0, calc(100% - 15vw) 0, 100% 100%);
+}
+
+/* 针对移动端的自适应修正 */
+@media (max-width: 768px) {
     #index-drawer-handle .frosted-shape {
-        clip-path: polygon(0 100%, 15vw 0, calc(100% - 15vw) 0, 100% 100%);
+        /* 在窄屏下改用较小的固定像素（如 20px）或更小的百分比（如 5%），确保绝对不会交叉 */
+        clip-path: polygon(0 100%, 20px 0, calc(100% - 20px) 0, 100% 100%);
     }
+}
+
 
     /* --------------------------------------
        2. Archive-doc 卡片整体缩小，并强制 4:5 比例
