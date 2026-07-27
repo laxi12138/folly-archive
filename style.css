@@ -4197,7 +4197,7 @@ cubic-bezier(.2,.8,.2,1);
        
     /* 整体等比缩小至 60% */
     .file-stack {
-        transform: scale(0.6) !important;
+        transform: scale(0.8) !important;
     }
     
     /* 左侧档案堆：设置缩放原点为左下，并在原 425px 基础上提 50px */
