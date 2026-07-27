@@ -1478,7 +1478,12 @@ const attachmentRegistry = {
         src: 'attachments/rail-side/photo-1.jpg',
         desc: ''
     },
-
+'rail-audio': {
+  title: '聲音標本',
+  mode: 'audio',
+  src: 'attachments/rail-side/trainspotting.wav',
+  desc: ''
+},
 
 
 };
