@@ -4159,42 +4159,73 @@ cubic-bezier(.2,.8,.2,1);
     }
 }
 
-/* ===================================================================
-   🌟 移动端 (竖屏) 核心适配：透视相框压缩 & 卡片 4:5 堆叠缩小
-   =================================================================== */
+/* ========================================================
+   📱 MOBILE ADAPTATION: 顶部边框 & 档案卡片堆叠适配
+   ======================================================== */
 @media (max-width: 768px) {
+
+    /* =========================
+       1. 顶部视窗边框与文字适配
+       ========================= */
     
-    /* --------------------------------------
-       1. 顶部透视切割线 / 底部相框向内压缩 (竖状长方形)
-    -------------------------------------- */
+    /* 将主视窗的上边框向下压，给 top-title 留出包裹空间 */
+    #main-viewport-frame,
+    #suprematist-frame {
+        top: 45px !important; 
+    }
+    
+    /* 同步下移顶部透视切割线，使其与新边框对齐 */
+    .perspective-line.top-left,
+    .perspective-line.top-right {
+        top: 45px !important;
+    }
+
+    /* 保持标题在边框上方（包裹区内），可稍微缩小字号防溢出 */
     #top-title {
-        font-size: 14px;          /* 缩小字号 */
-        letter-spacing: 6px;      /* 缩小字间距 */
-        top: 15px;
+        top: 12px !important; 
+        font-size: 16px !important;
     }
-    
+
+    /* 将坐标系下移至新边框（45px）的下方 */
     #coords {
-        top: 36px;                /* 跟随顶部标题上移 */
+        top: 60px !important; 
     }
 
-    #bottom-labels {
-        left: 20px;               /* 这里的 20px 决定了内框的边界 */
-        right: 20px;              
-        bottom: 20px;
-        font-size: 13px;
-    }
-
-    #bottom-center-label {
-        font-size: 15px;
-        letter-spacing: 6px;
+    /* =========================
+       2. 档案堆栈卡片缩小 60% 并上提 50px
+       ========================= */
+       
+    /* 整体等比缩小至 60% */
+    .file-stack {
+        transform: scale(0.6) !important;
     }
     
-    /* 修正底部把手的梯形切割，使其完美贴合 20px 的左右内框 */
-    #index-drawer-handle .frosted-shape {
-        clip-path: polygon(0 100%, 20px 0, calc(100% - 20px) 0, 100% 100%);
+    /* 左侧档案堆：设置缩放原点为左下，并在原 425px 基础上提 50px */
+    .position-left {
+        transform-origin: left bottom;
+        bottom: 475px !important; 
+    }
+
+    /* 右侧档案堆：设置缩放原点为右下，并在原 120px 基础上提 50px */
+    .position-right {
+        transform-origin: right bottom;
+        bottom: 170px !important; 
+    }
+    
+    /* =========================
+       3. 修复缩小 60% 后，抽出状态 (Extracted) 的高度位移补偿
+       ========================= */
+       
+    /* 右侧卡片抽出时，补偿缩放带来的高度落差，使其停留在屏幕视觉中心 */
+    .position-right .archive-doc.extracted {
+        top: -388px !important; /* 原 -233px / 0.6 近似值 */
+    }
+    
+    /* 左侧卡片抽出时的高度补偿 */
+    .position-left .archive-doc.extracted {
+        top: -16px !important; /* 原 -10px / 0.6 近似值 */
     }
 }
-
 
     /* --------------------------------------
        2. Archive-doc 卡片整体缩小，并强制 4:5 比例
