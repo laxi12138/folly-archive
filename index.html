@@ -1,0 +1,715 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant" translate="no">
+
+<head>
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="notranslate">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>墟域圖 · 遺構館</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css?v=2" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+</head>
+
+<body>
+    <!-- 🌟 独立提取：顶部透视切割线与视窗主框 -->
+    <svg class="perspective-line top-left"><line x1="0" y1="0" x2="100%" y2="100%" /></svg>
+    <svg class="perspective-line top-right"><line x1="100%" y1="0" x2="0" y2="100%" /></svg>
+    <div id="main-viewport-frame"></div>
+    <div id="suprematist-frame" style="position: fixed; inset: 0; z-index: 870; pointer-events: none;"></div>
+
+    <!-- 顶部墟域图与坐标 -->
+    <div id="top-title" data-i18n="top_title">墟域圖</div>
+    <div id="language-switcher">
+        <span class="lang-btn" onclick="switchLanguage('zh')">繁</span> /
+        <span class="lang-btn" onclick="switchLanguage('en')">EN</span> /
+        <span class="lang-btn" onclick="switchLanguage('ja')">JP</span>
+    </div>
+
+    <!-- 绝对定位的档案堆栈容器 -->
+    <div id="stack-garden" class="file-stack position-right"></div>
+    <div id="stack-record" class="file-stack position-left"></div>
+
+    <!-- attachment viewer -->
+    <div id="attachment-viewer" class="attachment-viewer">
+        <div class="attachment-viewer-inner">
+            <div class="attachment-sheet">
+                <div class="attachment-hud">
+
+                    <!-- 2. Score 摇杆专属 -->
+                    <div id="manual-score" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_card_view">卡片檢視</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-intro" data-i18n="manual_card_intro">向目標物體移動的空間方向拉動搖桿，物體由中心原點翻轉，獲得全角度檢視。</div>
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-joystick">
+                                <div class="manual-line" data-i18n="manual_joystick">——搖桿</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——縮小</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. PDF 阅读器专属 -->
+                    <div id="manual-pdf" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_doc_view">文檔閱覽</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-page">
+                                <div class="manual-line" data-i18n="manual_page_up">——上翻頁</div>
+                                <div class="manual-line" data-i18n="manual_page_down">——下翻頁</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——縮小</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Image 图像专属 -->
+                    <div id="manual-image" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_img_view">圖像檢視</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——縮小</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. TXT 文本专属 -->
+                    <div id="manual-txt" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_txt_view">文本閱覽</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——縮小</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="reset">⿴</div>
+                    <div class="hud-pdf-page" id="pdf-page-hud" style="display: none; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px;">
+                        <div id="pdf-prev">△</div>
+                        <div id="pdf-page-num" style="font-size: 10px; opacity: 0.6; pointer-events: none;">1/1</div>
+                        <div id="pdf-next">▽</div>
+                    </div>
+
+                    <div class="score-rotate-hud">
+                        <div class="hud-divider"></div>
+                        <div class="hud-rotate">
+                            <div class="joystick-wrap" id="joystick-wrap">
+                                <div id="joystick">
+                                    <div id="joystick-knob"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hud-divider"></div>
+                    <div class="hud-move">
+                        <div id="move-up">↑</div>
+                        <div class="hud-middle">
+                            <div id="move-left">←</div>
+                            <div id="move-right">→</div>
+                        </div>
+                        <div id="move-down">↓</div>
+                    </div>
+
+                    <div class="hud-divider"></div>
+                    <div class="hud-zoom">
+                        <div id="zoom-in">+</div>
+                        <div id="zoom-out">−</div>
+                    </div>
+                </div>
+
+                <div class="attachment-close">×</div>
+                <div class="attachment-meta">
+                    <div id="attachment-title" class="attachment-title"></div>
+                    <div id="attachment-filename" class="attachment-filename"></div>
+                </div>
+
+                <div id="attachment-stage" class="attachment-stage">
+                    <div id="score-card-shadow"></div>
+                    <div id="media-wrapper" class="media-wrapper"></div>
+                    <div id="score-hud-shadow" class="score-hud score-hud-shadow">
+                        <div id="manual-folly" class="hud-manual">
+                            <div class="hud-manual-title" data-i18n="manual_overlay_layer">疊合解析層</div>
+                            <div class="hud-manual-content">
+                                <div class="manual-intro" data-i18n="manual_calibrate">校準：滑鼠懸停指示器，鎖定於圖形記譜軌跡。</div>
+                                <div class="manual-intro" data-i18n="manual_sync">同步：指針隨影像進程，即時指向當前對應的的音符。</div>
+                            </div>
+                        </div>
+                        <div class="score-header" data-i18n="score_header_graphic">圖形記譜—————————</div>
+                        <div class="score-body">
+                            <img id="score-shadow-image" src="">
+                            <div class="shadow-focus-corners">
+                                <span class="corner tl"></span><span class="corner tr"></span>
+                                <span class="corner bl"></span><span class="corner br"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="score-hud" class="score-hud open">
+                        <div class="score-header" id="score-toggle" data-i18n="score_header_sync">—————————同步指示器</div>
+                        <div class="score-body">
+                            <img id="score-image" src="" />
+                            <div class="focus-corners">
+                                <span class="corner tl"></span><span class="corner tr"></span>
+                                <span class="corner bl"></span><span class="corner br"></span>
+                            </div>
+                            <div id="score-overlay">
+                                <svg id="arc-overlay" class="arc-overlay" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg">
+                                    <g id="arcs-container" style="transform-origin: -17px -52.5px;">
+                                        <path transform="translate(-10, -50) rotate(160)" class="score-arc" d="M -7.07,-7.07 A 10,10 0 0,1 7.07,-7.07" vector-effect="non-scaling-stroke" />
+                                        <path transform="translate(-15, -55) rotate(-150)" class="score-arc" d="M -14.14,-14.14 A 20,20 0 0,1 14.14,-14.14" vector-effect="non-scaling-stroke" />
+                                        <path transform="translate(-10, -55) rotate(160)" class="score-arc" d="M -21.21,-21.21 A 30,30 0 0,1 21.21,-21.21" vector-effect="non-scaling-stroke" />
+                                    </g>
+                                </svg>
+                            </div>
+                            <div id="score-playhead"></div>
+                            <div id="score-pulse"></div>
+                            <div id="score-playhead-2"></div>
+                        </div>
+                    </div>
+
+                    <div class="video-ui" id="video-ui">
+                        <div id="startup-manual-instrument" class="hud-manual startup-video-manual">
+                            <div class="hud-manual-content">
+                                <div class="manual-group">
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_play_pause">播放/暫停</span><span class="manual-dash">——</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="startup-manual-folly" class="hud-manual startup-video-manual">
+                            <div class="hud-manual-content">
+                                <div class="manual-group">
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_score_sync">視頻-樂譜同步</span><span class="manual-dash">——</span>
+                                    </div>
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_play_pause_chapter">播放/暫停/章節</span><span class="manual-dash">——</span>
+                                    </div>
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_chapter_node">章節節點</span><span class="manual-dash">——</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="video-progress"><div id="video-progress-bar"></div></div>
+                        <div class="video-stack">
+                            <div class="video-chapters"></div>
+                            <div class="video-controls">
+                                <div id="video-play">▽</div>
+                                <div id="video-pause">□</div>
+                                <div id="chapter-toggle" class="chapter-toggle">⋯</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="attachment-desc" class="attachment-desc"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌟 新增：網站初始化地圖操作提示 -->
+    <div id="map-init-hint" class="map-init-hint" data-i18n="map_init_hint">拖曳 · 縮放以檢視墟域圖</div>
+
+    <div id="map"></div>
+
+    <div id="compass-overlay" class="compass-overlay hidden">
+        <div class="compass-container">
+            <div class="compass-manual">
+                <div class="manual-title" data-i18n="compass_manual_title">羅盤導航指南</div>
+                <div class="manual-item" data-i18n="compass_out"> ‹( - 圈外：指針外展指向遺構。</div>
+                <div class="manual-item" data-i18n="compass_in"> ›( - 圈內：逆轉聚焦遺構原點。</div>
+                <div class="manual-item" data-i18n="compass_center"> ⨀ - 臨中：線圈向內收縮定位。</div>
+            </div>
+            <div class="compass-ring"></div>
+            <div class="compass-asterisk">
+                <div class="line" style="--deg: 0deg; --len: 20vmin;"></div>
+                <div class="line" style="--deg: 45deg; --len: 32vmin;"></div>
+                <div class="line" style="--deg: 90deg; --len: 38vmin;"></div>
+                <div class="line" style="--deg: 135deg; --len: 27vmin;"></div>
+                <div class="line" style="--deg: 180deg; --len: 29vmin;"></div>
+                <div class="line" style="--deg: 225deg; --len: 30vmin;"></div>
+                <div class="line" style="--deg: 270deg; --len: 30vmin;"></div>
+                <div class="line" style="--deg: 315deg; --len: 16vmin;"></div>
+            </div>
+            <div class="compass-dial"></div>
+            <div id="compass-pointer" class="compass-pointer">
+                <div class="compass-arrow">⌃</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ui">
+        <div class="main-title" id="main-title" data-i18n="main_title">廢墟園林系列</div>
+        <div id="title-hover-zone"></div>
+        <div id="title-hover-field"></div>
+    </div>
+
+    <div class="hud">
+        <div class="hud-title"></div>
+        <div class="coords" id="coords" data-i18n="coords_lat_lon">經度◓ 緯度◑</div>
+    </div>
+
+    <div id="record-nav">
+        <div id="record-prev" class="record-arrow record-arrow-up"></div>
+        <div id="record-next" class="record-arrow record-arrow-down"></div>
+    </div>
+
+    <div id="archive-drawer" class="drawer">
+        <div class="drawer-header">
+            <div class="drawer-close" onclick="closeDrawer()">×</div>
+        </div>
+        <div class="drawer-inner">
+            <div id="drawer-content">
+                <div class="drawer-body" data-i18n="drawer_select_site">選擇一個站點</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drawer-mask" class="drawer-mask" onclick="closeDrawer()"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+
+    <!-- 全局底部索引抽屉 -->
+    <div id="index-drawer">
+        <div id="index-drawer-handle">
+            <div class="frosted-shape"></div>
+            <svg class="drawer-perspective-line bottom-left"><line x1="0" y1="100%" x2="100%" y2="0" /></svg>
+            <svg class="drawer-perspective-line bottom-right"><line x1="100%" y1="100%" x2="0" y2="0" /></svg>
+
+            <div id="bottom-labels">
+                <span id="bottom-trigger-record" class="bottom-trigger" style="pointer-events: auto; cursor: pointer;" data-i18n="bottom_trigger_record">遺構錄系列</span>
+                <span id="bottom-center-label" class="bottom-trigger" style="pointer-events: auto; cursor: pointer;" data-i18n="bottom_center_label">遺構館</span>
+                <span id="bottom-trigger-ruin" class="bottom-trigger" style="pointer-events: auto; cursor: pointer;" data-i18n="bottom_trigger_ruin">⁙廢墟園林系列</span>
+            </div>
+        </div>
+
+        <div id="index-drawer-content">
+            <div class="index-top-title">
+                <p data-i18n="index_top_title">《墟域圖・遺構館》收錄漫遊世界時所遇見的人造殘構、荒地與被遺忘的地景，並持續建構一個不斷擴張的廢墟世界。</p>
+            </div>
+            <div class="index-three-columns">
+                <p data-i18n="index_p1">每一處遺構，都保存著稍縱即逝的「如畫美」，也孕育著另一場崩解的開始。這些殘構成為《廢墟園林》的土壤：作品借用仿古遺跡園林中「人為安排毀滅」的美學，將漫長的風化、侵蝕與坍塌濃縮成一場可被觀看、聆聽與經歷的「自毀終章」。⁙</p>
+                <p data-i18n="index_p2">《廢墟園林》透過圖形記譜與機關結構，將遺構編排成一件由時間、自然，以及建造之初便已寫入結構的崩解共同演奏。當秩序逐漸鬆動，建築開始以失去語意的聲響、振動與回響演繹自身的崩解；材料也在失去功能後，重新顯露物性，以及自然重新介入空間的節律。⁙</p>
+            </div>
+            <div class="index-conclusion">
+                <p data-i18n="index_conclusion">最終，所有影像、聲音與遺物重新匯入《遺構館》，成為持續更新的廢墟檔案，也共同拼湊出仍未完成的《墟域圖》。</p>
+            </div>
+            <div class="index-items">
+                <div class="archive-index-system">
+                    <div class="archive-index-title" data-i18n="index_title">— 索引 —</div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="land" data-i18n="cat_land">土地</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="mountain" data-i18n="tag_mountain">山</span>
+                            <span class="index-tag" data-tag="slope" data-i18n="tag_slope">坡</span>
+                            <span class="index-tag" data-tag="shore" data-i18n="tag_shore">岸</span>
+                            <span class="index-tag" data-tag="bay" data-i18n="tag_bay">灣</span>
+                            <span class="index-tag" data-tag="port" data-i18n="tag_port">埠</span>
+                            <span class="index-tag" data-tag="plateau" data-i18n="tag_plateau">塬</span>
+                        </div>
+                    </div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="architecture" data-i18n="cat_arch">建築</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="corridor" data-i18n="tag_corridor">廊</span>
+                            <span class="index-tag" data-tag="room" data-i18n="tag_room">廳</span>
+                            <span class="index-tag" data-tag="dwelling" data-i18n="tag_dwelling">居</span>
+                            <span class="index-tag" data-tag="fort" data-i18n="tag_fort">堡</span>
+                            <span class="index-tag" data-tag="hall" data-i18n="tag_hall">殿</span>
+                            <span class="index-tag" data-tag="tower" data-i18n="tag_tower">塔</span>
+                            <span class="index-tag" data-tag="tunnel" data-i18n="tag_tunnel">甬</span>
+                            <span class="index-tag" data-tag="column" data-i18n="tag_column">柱</span>
+                            <span class="index-tag" data-tag="factory" data-i18n="tag_factory">廠</span>
+                            <span class="index-tag" data-tag="vessel" data-i18n="tag_vessel">艦</span>
+                            <span class="index-tag" data-tag="rail" data-i18n="tag_rail">轍</span>
+                        </div>
+                    </div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="status" data-i18n="cat_status">狀態</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="ruin" data-i18n="tag_ruin">殘</span>
+                            <span class="index-tag" data-tag="remains" data-i18n="tag_remains">骸</span>
+                            <span class="index-tag" data-tag="desolate" data-i18n="tag_desolate">荒</span>
+                            <span class="index-tag" data-tag="sunken" data-i18n="tag_sunken">沉</span>
+                            <span class="index-tag" data-tag="scorched" data-i18n="tag_scorched">焦</span>
+                            <span class="index-tag" data-tag="crack" data-i18n="tag_crack">裂</span>
+                            <span class="index-tag" data-tag="eroded" data-i18n="tag_eroded">蝕</span>
+                            <span class="index-tag" data-tag="relocated" data-i18n="tag_relocated">遷</span>
+                        </div>
+                    </div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="nature" data-i18n="cat_nature">自然</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="vine" data-i18n="tag_vine">蔓</span>
+                            <span class="index-tag" data-tag="tree" data-i18n="tag_tree">木</span>
+                            <span class="index-tag" data-tag="spike" data-i18n="tag_spike">棘</span>
+                            <span class="index-tag" data-tag="ash" data-i18n="tag_ash">灰</span>
+                            <span class="index-tag" data-tag="membrane" data-i18n="tag_membrane">膜</span>
+                            <span class="index-tag" data-tag="water" data-i18n="tag_water">水</span>
+                            <span class="index-tag" data-tag="wave" data-i18n="tag_wave">波</span>
+                            <span class="index-tag" data-tag="sand" data-i18n="tag_sand">沙</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🌐 语言库与翻译脚本 -->
+    <script>
+        const languageVault = {
+            "en": {
+                "top_title": "Ruin Atlas",
+                "manual_card_view": "Card View",
+                "manual_card_intro": "Pull the joystick towards the spatial direction of the target object. The object flips from its center origin for full-angle viewing.",
+                "manual_reset": "——Reset",
+                "manual_joystick": "——Joystick",
+                "manual_pan_up": "——Pan Up",
+                "manual_pan_lr": "————Pan L/R",
+                "manual_pan_down": "——Pan Down",
+                "manual_zoom_in": "——Zoom In",
+                "manual_zoom_out": "——Zoom Out",
+                "manual_doc_view": "Document View",
+                "manual_page_up": "——Page Up",
+                "manual_page_down": "——Page Down",
+                "manual_img_view": "Image View",
+                "manual_txt_view": "Text View",
+                "manual_overlay_layer": "Overlay Analysis",
+                "manual_calibrate": "Calibration: Hover the indicator to lock onto the graphic score track.",
+                "manual_sync": "Sync: The pointer indicates the corresponding notes in real-time as the video progresses.",
+                "score_header_graphic": "Graphic Score—————————",
+                "score_header_sync": "—————————Sync Indicator",
+                "video_play_pause": "Play/Pause",
+                "video_score_sync": "Video-Score Sync",
+                "video_play_pause_chapter": "Play/Pause/Chapter",
+                "video_chapter_node": "Chapter Node",
+                "map_init_hint": "Drag · Zoom to explore the Atlas",
+                "compass_manual_title": "Compass Navigation Guide",
+                "compass_out": " ‹( - Outer Ring: Pointer extends to ruins.",
+                "compass_in": " ›( - Inner Ring: Reverse focus on origin.",
+                "compass_center": " ⨀ - Center: Coil contracts to target.",
+                "main_title": "Ruins Garden Series",
+                "coords_lat_lon": "Longitude◓ Latitude◑",
+                "drawer_select_site": "Select a site",
+                "bottom_trigger_record": "Relics Record Series",
+                "bottom_center_label": "Relics Pavilion",
+                "bottom_trigger_ruin": "⁙ Ruins Garden Series",
+                "index_top_title": "'Ruin Atlas · Relics Pavilion' catalogs abandoned structures, wastelands, and forgotten landscapes encountered across the world, gradually constructing an ever-expanding world of ruins.",
+                "index_p1": "Every relic preserves a fleeting 'picturesque beauty' while gestating the beginning of another collapse. These remnants serve as the soil for 'Ruins Garden': the work borrows the aesthetic of 'arranged destruction' from faux ruin gardens, condensing long periods of weathering, erosion, and collapse into an 'epilogue of self-destruction' that can be viewed, heard, and experienced. ⁙",
+                "index_p2": "'Ruins Garden' uses graphic scores and mechanical structures to arrange the relics into a performance co-played by time, nature, and the collapse inscribed in their structure from the beginning. As order loosens, the architecture begins to perform its own collapse through sound, vibration, and echoes devoid of semantics; after losing their function, materials re-reveal their physical nature, alongside nature re-intervening in the rhythm of the space. ⁙",
+                "index_conclusion": "Ultimately, all images, sounds, and relics flow back into the 'Relics Pavilion', becoming a continuously updated archive of ruins and collectively piecing together the still unfinished 'Ruin Atlas'.",
+                "index_title": "— Index —",
+                "cat_land": "Land", "cat_arch": "Arch", "cat_status": "Status", "cat_nature": "Nature",
+                "tag_mountain": "Mountain", "tag_slope": "Slope", "tag_shore": "Shore", "tag_bay": "Bay", "tag_port": "Port", "tag_plateau": "Plateau",
+                "tag_corridor": "Corridor", "tag_room": "Room", "tag_dwelling": "Dwelling", "tag_fort": "Fort", "tag_hall": "Hall", "tag_tower": "Tower", "tag_tunnel": "Tunnel", "tag_column": "Column", "tag_factory": "Factory", "tag_vessel": "Vessel", "tag_rail": "Rail",
+                "tag_ruin": "Ruin", "tag_remains": "Remains", "tag_desolate": "Desolate", "tag_sunken": "Sunken", "tag_scorched": "Scorched", "tag_crack": "Crack", "tag_eroded": "Eroded", "tag_relocated": "Relocated",
+                "tag_vine": "Vine", "tag_tree": "Tree", "tag_spike": "Spike", "tag_ash": "Ash", "tag_membrane": "Membrane", "tag_water": "Water", "tag_wave": "Wave", "tag_sand": "Sand",
+
+                // 🌟 新增：Registry 檔案庫內容與 UI 提示翻譯
+                "specimen_visual": "Visual Specimen",
+                "specimen_audio": "Audio Specimen",
+                "specimen_object": "Object Specimen",
+                "specimen_note": "Annotation Card",
+                "title_radio_score": "Graphic Score | Scorched Aether",
+                "title_radio_instrument": "Ruin Instrument | Aether Rift",
+                "title_radio_film": "Ruins Garden Part II | Scorched Aether Tower",
+                "title_radio_rec": "Radio Road Scorched Earth | Relics Record",
+                "desc_radio_score": "Aether resonance field graphic score.",
+                "desc_radio_instrument": "High-frequency circuit critical acoustic experiment.",
+                "desc_radio_film": "Electromagnetic scherzo performance of remnants.",
+                "title_plague_score": "Graphic Score | Heart Reverberation",
+                "title_plague_instrument": "Ruin Instrument | Rusted Blood Heart",
+                "title_plague_film": "Ruins Garden Part I | Sunken Deadwater Ventricle",
+                "title_plague_rec": "Plague Pig Dam Sunken Ruins | Relics Record",
+                "desc_plague_score": "Deadwater sedimentation graphic score.",
+                "desc_plague_instrument": "Fragmented heart percussion acoustic experiment.",
+                "desc_plague_film": "Sunken ruins core collapse reverberation performance.",
+                "ui_pdf_loading": "Loading blueprint...",
+                "ui_local_preview_hint": "Note: Local preview mode (file:///) does not support page-turning HUD. Please use Live Server for the full experience.",
+                // 在 "en" 中加入：
+                "ui_garden": "Ruins Garden",
+                "ui_record": "Relics Record",
+                "ui_creator": "Creator: Sam",
+                "ui_recorder": "Recorder: Sam",
+                "ui_archive_date": "Archive: ",
+                "ui_auto_nav": "Auto Nav ⌖",
+                "ui_compass_nav": "⊙ Compass Nav"
+
+            },
+            "ja": {
+                "top_title": "墟域図",
+                "manual_card_view": "カードプレビュー",
+                "manual_card_intro": "目標となる空間の方向へジョイスティックを引くと、オブジェクトが中心から反転し、全角度からのプレビューが可能になります。",
+                "manual_reset": "——リセット",
+                "manual_joystick": "——ジョイスティック",
+                "manual_pan_up": "——上へ移動",
+                "manual_pan_lr": "————左右へ移動",
+                "manual_pan_down": "——下へ移動",
+                "manual_zoom_in": "——拡大",
+                "manual_zoom_out": "——縮小",
+                "manual_doc_view": "ドキュメント閲覧",
+                "manual_page_up": "——前のページ",
+                "manual_page_down": "——次のページ",
+                "manual_img_view": "画像閲覧",
+                "manual_txt_view": "テキスト閲覧",
+                "manual_overlay_layer": "解析レイヤーの重ね合わせ",
+                "manual_calibrate": "キャリブレーション：インジケーターをホバーし、図形楽譜の軌跡にロックします。",
+                "manual_sync": "同期：映像の進行に伴い、ポインターが現在の音符をリアルタイムで指し示します。",
+                "score_header_graphic": "図形楽譜—————————",
+                "score_header_sync": "—————————同期インジケーター",
+                "video_play_pause": "再生/一時停止",
+                "video_score_sync": "映像・楽譜同期",
+                "video_play_pause_chapter": "再生/一時停止/チャプター",
+                "video_chapter_node": "チャプターノード",
+                "map_init_hint": "ドラッグ・ズームで墟域図を探索",
+                "compass_manual_title": "コンパスナビゲーションガイド",
+                "compass_out": " ‹( - 外枠：ポインターが遺構を指します。",
+                "compass_in": " ›( - 内枠：原点にフォーカスを戻します。",
+                "compass_center": " ⨀ - 中心：コイルが収縮し位置を特定します。",
+                "main_title": "廃墟庭園シリーズ",
+                "coords_lat_lon": "経度◓ 緯度◑",
+                "drawer_select_site": "サイトを選択",
+                "bottom_trigger_record": "遺構録シリーズ",
+                "bottom_center_label": "遺構館",
+                "bottom_trigger_ruin": "⁙ 廃墟庭園シリーズ",
+                "index_top_title": "《墟域図・遺構館》は、世界を巡る中で遭遇した人工の残構、荒地、そして忘れ去られた風景を記録し、拡張し続ける廃墟の世界を構築し続ける。",
+                "index_p1": "すべての遺構は、束の間の「絵画的な美しさ」を保ちながら、別の崩壊の始まりを孕んでいます。これらの残骸は『廃墟庭園』の土壌となります。作品は模造遺跡庭園における「意図された破壊」の美学を借りて、長い風化、浸食、崩壊の過程を、見て、聞いて、体験できる「自己破壊の終章」へと凝縮しています。⁙",
+                "index_p2": "『廃墟庭園』は、図形楽譜とからくり構造を通じて、遺構を時間、自然、そして建造当初から組み込まれていた崩壊が共演する一つの作品として編曲します。秩序が次第に緩むと、建築は意味を持たない音、振動、反響によって自身の崩壊を演じ始めます。素材も機能を失った後、その物性を再び現し、自然が空間のリズムに再び介入していきます。⁙",
+                "index_conclusion": "最終的に、すべての映像、音声、遺物は再び『遺構館』へと還元され、更新され続ける廃墟のアーカイブとなり、未完成のままの『墟域図』を共に継ぎ接ぎしていきます。",
+                "index_title": "— 索引 —",
+                "cat_land": "土地", "cat_arch": "建築", "cat_status": "状態", "cat_nature": "自然",
+                "tag_mountain": "山", "tag_slope": "坂", "tag_shore": "岸", "tag_bay": "湾", "tag_port": "埠", "tag_plateau": "台",
+                "tag_corridor": "廊", "tag_room": "間", "tag_dwelling": "居", "tag_fort": "堡", "tag_hall": "殿", "tag_tower": "塔", "tag_tunnel": "甬", "tag_column": "柱", "tag_factory": "廠", "tag_vessel": "艦", "tag_rail": "轍",
+                "tag_ruin": "残", "tag_remains": "骸", "tag_desolate": "荒", "tag_sunken": "沈", "tag_scorched": "焦", "tag_crack": "裂", "tag_eroded": "蝕", "tag_relocated": "遷",
+                "tag_vine": "蔓", "tag_tree": "木", "tag_spike": "棘", "tag_ash": "灰", "tag_membrane": "膜", "tag_water": "水", "tag_wave": "波", "tag_sand": "沙",
+
+                // 🌟 新增：Registry 檔案庫內容與 UI 提示翻譯
+                "specimen_visual": "視覚標本",
+                "specimen_audio": "音響標本",
+                "specimen_object": "物件標本",
+                "specimen_note": "注釈カード",
+                "title_radio_score": "図形楽譜 | 焦土のエーテル",
+                "title_radio_instrument": "廃墟の楽器 | エーテルの狭間",
+                "title_radio_film": "廃墟庭園・其の二 | 焦土のエーテル鉄塔",
+                "title_radio_rec": "電台路の焦土 | 遺構録",
+                "desc_radio_score": "エーテル共鳴場の図形楽譜。",
+                "desc_radio_instrument": "高周波回路の臨界音響実験。",
+                "desc_radio_film": "残構の電磁スケルツォ演奏。",
+                "title_plague_score": "図形楽譜 | 心臓の残響",
+                "title_plague_instrument": "廃墟の楽器 | 錆血の心臓",
+                "title_plague_film": "廃墟庭園・其の一 | 沈墟の死水心室",
+                "title_plague_rec": "瘟猪壩の沈墟 | 遺構録",
+                "desc_plague_score": "死水堆積の図形楽譜。",
+                "desc_plague_instrument": "断片心臓の打撃音響実験。",
+                "desc_plague_film": "沈墟コア崩壊の反響演奏。",
+                "ui_pdf_loading": "図面を読み込み中...",
+                "ui_local_preview_hint": "ヒント：ローカルプレビューモード（file:///）では、ページめくりHUDはサポートされていません。完全な体験を得るにはLive Serverを使用してください。",
+
+                // 在 "ja" 中加入：
+                "ui_garden": "廃墟庭園",
+                "ui_record": "遺構録",
+                "ui_creator": "制作者: 羅清源",
+                "ui_recorder": "記録者: 羅清源",
+                "ui_archive_date": "アーカイブ: ",
+                "ui_auto_nav": "自動ナビ ⌖",
+                "ui_compass_nav": "⊙ コンパスナビ"
+            },
+            "zh": {
+                "top_title": "墟域圖",
+                "manual_card_view": "卡片檢視",
+                "manual_card_intro": "向目標物體移動的空間方向拉動搖桿，物體由中心原點翻轉，獲得全角度檢視。",
+                "manual_reset": "——重置",
+                "manual_joystick": "——搖桿",
+                "manual_pan_up": "——上平移",
+                "manual_pan_lr": "————左右平移",
+                "manual_pan_down": "——下平移",
+                "manual_zoom_in": "——放大",
+                "manual_zoom_out": "——縮小",
+                "manual_doc_view": "文檔閱覽",
+                "manual_page_up": "——上翻頁",
+                "manual_page_down": "——下翻頁",
+                "manual_img_view": "圖像檢視",
+                "manual_txt_view": "文本閱覽",
+                "manual_overlay_layer": "疊合解析層",
+                "manual_calibrate": "校準：滑鼠懸停指示器，鎖定於圖形記譜軌跡。",
+                "manual_sync": "同步：指針隨影像進程，即時指向當前對應的的音符。",
+                "score_header_graphic": "圖形記譜—————————",
+                "score_header_sync": "—————————同步指示器",
+                "video_play_pause": "播放/暫停",
+                "video_score_sync": "視頻-樂譜同步",
+                "video_play_pause_chapter": "播放/暫停/章節",
+                "video_chapter_node": "章節節點",
+                "map_init_hint": "拖曳 · 縮放以檢視墟域圖",
+                "compass_manual_title": "羅盤導航指南",
+                "compass_out": " ‹( - 圈外：指針外展指向遺構。",
+                "compass_in": " ›( - 圈內：逆轉聚焦遺構原點。",
+                "compass_center": " ⨀ - 臨中：線圈向內收縮定位。",
+                "main_title": "廢墟園林系列",
+                "coords_lat_lon": "經度◓ 緯度◑",
+                "drawer_select_site": "選擇一個站點",
+                "bottom_trigger_record": "遺構錄系列",
+                "bottom_center_label": "遺構館",
+                "bottom_trigger_ruin": "⁙廢墟園林系列",
+                "index_top_title": "《墟域圖・遺構館》收錄漫遊世界時所遇見的人造殘構、荒地與被遺忘的地景，並持續建構一個不斷擴張的廢墟世界。",
+                "index_p1": "每一處遺構，都保存著稍縱即逝的「如畫美」，也孕育著另一場崩解的開始。這些殘構成為《廢墟園林》的土壤：作品借用仿古遺跡園林中「人為安排毀滅」的美學，將漫長的風化、侵蝕與坍塌濃縮成一場可被觀看、聆聽與經歷的「自毀終章」。⁙",
+                "index_p2": "《廢墟園林》透過圖形記譜與機關結構，將遺構編排成一件由時間、自然，以及建造之初便已寫入結構的崩解共同演奏。當秩序逐漸鬆動，建築開始以失去語意的聲響、振動與回響演繹自身的崩解；材料也在失去功能後，重新顯露物性，以及自然重新介入空間的節律。⁙",
+                "index_conclusion": "最終，所有影像、聲音與遺物重新匯入《遺構館》，成為持續更新的廢墟檔案，也共同拼湊出仍未完成的《墟域圖》。",
+                "index_title": "— 索引 —",
+                "cat_land": "土地", "cat_arch": "建築", "cat_status": "狀態", "cat_nature": "自然",
+                "tag_mountain": "山", "tag_slope": "坡", "tag_shore": "岸", "tag_bay": "灣", "tag_port": "埠", "tag_plateau": "塬",
+                "tag_corridor": "廊", "tag_room": "廳", "tag_dwelling": "居", "tag_fort": "堡", "tag_hall": "殿", "tag_tower": "塔", "tag_tunnel": "甬", "tag_column": "柱", "tag_factory": "廠", "tag_vessel": "艦", "tag_rail": "轍",
+                "tag_ruin": "殘", "tag_remains": "骸", "tag_desolate": "荒", "tag_sunken": "沉", "tag_scorched": "焦", "tag_crack": "裂", "tag_eroded": "蝕", "tag_relocated": "遷",
+                "tag_vine": "蔓", "tag_tree": "木", "tag_spike": "棘", "tag_ash": "灰", "tag_membrane": "膜", "tag_water": "水", "tag_wave": "波", "tag_sand": "沙",
+
+                // 🌟 新增：Registry 檔案庫內容與 UI 提示翻譯
+                "specimen_visual": "視覺標本",
+                "specimen_audio": "聲音標本",
+                "specimen_object": "物件標本",
+                "specimen_note": "註釋卡",
+                "title_radio_score": "圖形記譜 | 焦土以太",
+                "title_radio_instrument": "廢墟樂器 | 以太狹間",
+                "title_radio_film": "廢墟園林·其二 | 焦土以太鐵塔",
+                "title_radio_rec": "電臺路焦土 | 遺構錄",
+                "desc_radio_score": "以太共振場圖形記譜。",
+                "desc_radio_instrument": "高頻迴路臨界聲學實驗。",
+                "desc_radio_film": "殘構電磁諧謔演奏。",
+                "title_plague_score": "圖形記譜 | 心臟殘響",
+                "title_plague_instrument": "廢墟樂器 | 鏽血心臟",
+                "title_plague_film": "廢墟園林·其一 | 沉墟死水心室",
+                "title_plague_rec": "瘟豬壩沉墟 | 遺構錄",
+                "desc_plague_score": "死水沉積圖形記譜。",
+                "desc_plague_instrument": "殘片心臟敲擊聲學實驗。",
+                "desc_plague_film": "沉墟內核坍縮回響演奏。",
+                "ui_pdf_loading": "讀取圖紙中...",
+                "ui_local_preview_hint": "提示：本地預覽模式 (file:///)，不支援翻頁 HUD。請使用 Live Server 以獲得完整體驗。",
+
+                // 在 "zh" 中加入：
+                "ui_garden": "廢墟園林",
+                "ui_record": "遺構錄",
+                "ui_creator": "創作者: 羅清源",
+                "ui_recorder": "記錄者: 羅清源",
+                "ui_archive_date": "歸檔: ",
+                "ui_auto_nav": "自動導航 ⌖",
+                "ui_compass_nav": "⊙ 導航羅盤"
+            }
+        };
+
+        // 核心解码翻译函数
+        function cyberDecodeTranslate(element, targetText, duration = 1000) {
+            const originalText = element.innerText;
+            const originalLen = originalText.length;
+            const targetLen = targetText.length;
+            const startTime = performance.now();
+
+            function updateFrame(currentTime) {
+                const elapsed = currentTime - startTime;
+                let progress = elapsed / duration;
+
+                if (progress > 1) progress = 1;
+
+                // 使用 ease-out 曲线：开始解码极快，结尾稍微放缓，模拟大脑处理信息的真实感
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+                // 计算当前应该显示多少个目标字符，保留多少个原文字符
+                const targetCutIndex = Math.round(targetLen * easeProgress);
+                const originalCutIndex = Math.round(originalLen * easeProgress);
+
+                // 拼接：左边是已翻译的新语言 + 右边是尚未翻译的旧语言
+                const currentString = targetText.substring(0, targetCutIndex) +
+                    originalText.substring(originalCutIndex);
+
+                element.innerText = currentString;
+
+                // 如果进度未完成，继续请求下一帧
+                if (progress < 1) {
+                    requestAnimationFrame(updateFrame);
+                }
+            }
+
+            requestAnimationFrame(updateFrame);
+        }
+        // 🌟 新增一個全局變數來記錄當前語系
+        window.currentLang = 'zh'; // 預設語系
+
+        function switchLanguage(targetLang) {
+            window.currentLang = targetLang; // 更新當前語系
+            const vault = languageVault[targetLang];
+            if (!vault) return;
+
+            // 找到所有带有 data-i18n 标签的元素
+            const elementsToTranslate = document.querySelectorAll('[data-i18n]');
+
+            elementsToTranslate.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const targetText = vault[key];
+
+                if (targetText && el.innerText !== targetText) {
+                    // 给不同的句子加上微小的随机延迟，模拟义体系统的异步处理
+                    const randomDelay = Math.random() * 200;
+
+                    setTimeout(() => {
+                        cyberDecodeTranslate(el, targetText, 1000);
+                    }, randomDelay);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
