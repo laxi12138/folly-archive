@@ -4178,8 +4178,8 @@ cubic-bezier(.2,.8,.2,1);
     }
 
     #bottom-labels {
-        left: 20px;               /* 核心：将左右边界向内大幅压缩 */
-        right: 20px;              /* 形成符合竖屏的“4:5 竖状长方形”透视感 */
+        left: 20px;               /* 这里的 20px 决定了内框的边界 */
+        right: 20px;              
         bottom: 20px;
         font-size: 13px;
     }
@@ -4189,15 +4189,8 @@ cubic-bezier(.2,.8,.2,1);
         letter-spacing: 6px;
     }
     
-    /* 默认桌面端代码 */
-#index-drawer-handle .frosted-shape {
-    clip-path: polygon(0 100%, 15vw 0, calc(100% - 15vw) 0, 100% 100%);
-}
-
-/* 针对移动端的自适应修正 */
-@media (max-width: 768px) {
+    /* 修正底部把手的梯形切割，使其完美贴合 20px 的左右内框 */
     #index-drawer-handle .frosted-shape {
-        /* 在窄屏下改用较小的固定像素（如 20px）或更小的百分比（如 5%），确保绝对不会交叉 */
         clip-path: polygon(0 100%, 20px 0, calc(100% - 20px) 0, 100% 100%);
     }
 }
