@@ -4203,13 +4203,13 @@ cubic-bezier(.2,.8,.2,1);
     /* 左侧档案堆：设置缩放原点为左下，并在原 425px 基础上提 50px */
     .position-left {
         transform-origin: left bottom;
-        bottom: 90px !important; 
+        bottom:300px !important; 
     }
 
     /* 右侧档案堆：设置缩放原点为右下，并在原 120px 基础上提 50px */
     .position-right {
         transform-origin: right bottom;
-        bottom: 90px !important; 
+        bottom: 150px !important; 
     }
     
     /* =========================
