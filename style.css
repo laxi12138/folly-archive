@@ -3272,7 +3272,7 @@ cubic-bezier(.2,.8,.2,1);
     left: 52%;
     /* 🌟 稍微调整角度，形成微弱的层级错落 */
     transform: translateX(-50%);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 200 !important;
     color: rgba(0,0,0,0.34);
     z-index: 1001;
