@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>遺構館 · 檔案系統</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans+JP:wght@300;400;500&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="archive-system.css">
+</head>
+<body>
+    <div id="archive-map"></div>
+
+    <div id="archive-crosshair" aria-hidden="true">
+        <span class="crosshair-h"></span>
+        <span class="crosshair-v"></span>
+        <span class="crosshair-core"></span>
+    </div>
+    <div id="coordinate-readout">0° 0′ 0″ ◒ · 0° 0′ 0″ ◑</div>
+
+    <aside class="search-panel" aria-label="Location tools">
+        <a class="back-link" href="index.html" aria-label="Back to Ruin Atlas">‹</a>
+        <h1 data-i18n="panel_title">遺構館 · 檔案系統</h1>
+
+        <section class="location-tools">
+            <div class="tool-line search-line">
+                <div class="input-wrap">
+                    <input id="place-search" type="search" autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-controls="place-suggestions">
+                    <ol id="place-suggestions" class="place-suggestions" role="listbox"></ol>
+                    <div id="google-attribution" class="google-attribution"><span data-i18n="place_source">地名資料</span> · <span translate="no">Google Maps</span></div>
+                </div>
+                <label for="place-search" data-i18n="search_place">搜索地點</label>
+            </div>
+
+            <div class="tool-line coord-line">
+                <div class="coord-inputs">
+                    <input id="coord-lat" inputmode="decimal" placeholder="Lat">
+                    <input id="coord-lng" inputmode="decimal" placeholder="Lng">
+                </div>
+                <button id="locate-coordinate" type="button" data-i18n="coord_convert">坐標轉換</button>
+            </div>
+
+            <button id="copy-coordinate" class="text-button copy-button" type="button" data-i18n="copy_coord">複製至檔案系統</button>
+            <div id="search-status" class="micro-status" aria-live="polite"></div>
+        </section>
+
+        <div class="panel-rule"></div>
+
+        <section class="layer-panel">
+            <div class="layer-heading" data-i18n="layers_title">顯示層</div>
+            <label class="layer-row">
+                <input id="layer-border" type="checkbox">
+                <span class="checkmark"></span>
+                <span data-i18n="layer_border">國家邊界</span>
+            </label>
+            <label class="layer-row">
+                <input id="layer-ocean" type="checkbox">
+                <span class="checkmark"></span>
+                <span data-i18n="layer_ocean">海洋</span>
+            </label>
+            <label class="layer-row">
+                <input id="layer-human" type="checkbox" checked>
+                <span class="checkmark"></span>
+                <span data-i18n="layer_human">人類居住痕跡</span>
+            </label>
+            <label class="layer-row">
+                <input id="layer-archive" type="checkbox" checked>
+                <span class="checkmark"></span>
+                <span data-i18n="layer_archive">已檔案的遺構</span>
+            </label>
+            <label class="layer-row">
+                <input id="layer-visitors" type="checkbox">
+                <span class="checkmark"></span>
+                <span data-i18n="layer_visitors">他人投稿地點</span>
+            </label>
+        </section>
+    </aside>
+
+    <main class="archive-form-shell">
+        <span class="form-diagonal" aria-hidden="true"></span>
+        <button id="new-record" class="new-record" type="button" title="New record">＋</button>
+        <form id="archive-form" novalidate>
+            <div class="form-grid-top">
+                <input id="archivist" name="archivist" required data-i18n-placeholder="archivist" placeholder="歸檔者">
+                <input id="archive-coordinate" name="coordinate" required data-i18n-placeholder="coordinate" placeholder="坐標">
+                <input id="archive-date" name="date" type="date" required aria-label="Date">
+            </div>
+
+            <div class="record-body">
+                <label class="attachment-box" for="attachments">
+                    <input id="attachments" name="attachments" type="file" multiple accept="image/*,audio/*,video/*,.pdf,.txt">
+                    <span data-i18n="attachment">添加附件</span>
+                    <small id="attachment-count">0</small>
+                </label>
+
+                <div class="record-fields">
+                    <input id="place-title" name="title" required data-i18n-placeholder="place_title" placeholder="地名標題">
+                    <textarea id="description" name="description" required data-i18n-placeholder="description" placeholder="簡介"></textarea>
+                </div>
+            </div>
+
+            <div id="file-list" class="file-list"></div>
+
+            <div class="submission-row">
+                <div class="admin-box">
+                    <input id="admin-password" name="adminPassword" type="password" autocomplete="current-password" placeholder="********">
+                    <button id="admin-submit" type="button" data-i18n="admin_archive">歸檔</button>
+                </div>
+                <button id="visitor-submit" class="visitor-submit" type="button" data-i18n="visitor_submit">訪客投稿</button>
+            </div>
+
+            <div id="turnstile-slot"></div>
+            <div id="submit-status" class="submit-status" aria-live="polite"></div>
+        </form>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="archive-system.js"></script>
+    <!-- Replace YOUR_GOOGLE_MAPS_API_KEY and restrict the key to ruin-archive.site + Maps JavaScript API / Places API. -->
+    <script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&loading=async&libraries=places&callback=initGooglePlaces"></script>
+</body>
+</html>
