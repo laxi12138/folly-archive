@@ -1,0 +1,749 @@
+// Archive submission system
+const MAP_WIDTH = 4000;
+const MAP_HEIGHT = 3000;
+const GEO_SCALE = 1.0;
+const WORLD_SCALE = 1.0;
+const OFFSET_X = 0;
+const OFFSET_Y = 0;
+const SUBMISSION_ENDPOINT = 'https://ruin-archive-submission.lliquidcat.workers.dev/submit';
+const TURNSTILE_SITE_KEY = '';
+const MAX_FILES = 5;
+const MAX_TOTAL_FILE_BYTES = 8 * 1024 * 1024;
+
+const EXISTING_SITES = [
+  {
+    "name": "瘟豬壩沉墟",
+    "lat": 30.454417,
+    "lng": 104.047667,
+    "type": "garden",
+    "archiveDate": "2025.04"
+  },
+  {
+    "name": "電臺路焦土",
+    "lat": 31.225833,
+    "lng": 121.618333,
+    "type": "garden",
+    "archiveDate": "2026.03"
+  },
+  {
+    "name": "山葬灰脈",
+    "lat": 32.04174,
+    "lng": 119.83912,
+    "type": "record",
+    "archiveDate": "2017.08"
+  },
+  {
+    "name": "琉棘庭",
+    "lat": 31.2270054,
+    "lng": 121.6191375,
+    "type": "record",
+    "archiveDate": "2018.07"
+  },
+  {
+    "name": "裂翼坪",
+    "lat": 41.860278,
+    "lng": -87.606111,
+    "type": "record",
+    "archiveDate": "2021.08"
+  },
+  {
+    "name": "軌畔孤構",
+    "lat": 32.552507,
+    "lng": -94.3644399,
+    "type": "record",
+    "archiveDate": "2022.06"
+  },
+  {
+    "name": "残柱林",
+    "lat": 41.77502,
+    "lng": -87.56954,
+    "type": "record",
+    "archiveDate": "2022.10"
+  },
+  {
+    "name": "池骸灣",
+    "lat": 37.7806,
+    "lng": -122.5137,
+    "type": "record",
+    "archiveDate": "2023.08"
+  },
+  {
+    "name": "褶層灣",
+    "lat": 47.1808,
+    "lng": -122.5537,
+    "type": "record",
+    "archiveDate": "2023.12"
+  },
+  {
+    "name": "釉骸拓壁",
+    "lat": 30.7023424,
+    "lng": 104.0714623,
+    "type": "record",
+    "archiveDate": "2024.04"
+  },
+  {
+    "name": "疊骸構陣",
+    "lat": 30.4416944,
+    "lng": 104.03475,
+    "type": "record",
+    "archiveDate": "2024.05"
+  },
+  {
+    "name": "苔網塬",
+    "lat": 30.66457,
+    "lng": 104.15798,
+    "type": "record",
+    "archiveDate": "2024.05"
+  },
+  {
+    "name": "陸塢艦骸",
+    "lat": 30.5854444,
+    "lng": 104.0365278,
+    "type": "record",
+    "archiveDate": "2024.06"
+  },
+  {
+    "name": "墟響廳",
+    "lat": 30.5886698,
+    "lng": 104.0341997,
+    "type": "record",
+    "archiveDate": "2024.06"
+  },
+  {
+    "name": "波蝕脊堤",
+    "lat": 30.8227055,
+    "lng": 121.5305626,
+    "type": "record",
+    "archiveDate": "2024.07"
+  },
+  {
+    "name": "曜原驛",
+    "lat": 38.83587,
+    "lng": 117.55678,
+    "type": "record",
+    "archiveDate": "2024.08"
+  },
+  {
+    "name": "溶境遺廊",
+    "lat": 30.660271,
+    "lng": 104.0676944,
+    "type": "record",
+    "archiveDate": "2024.08"
+  },
+  {
+    "name": "荒娛敖包",
+    "lat": 41.72871,
+    "lng": 110.51296,
+    "type": "record",
+    "archiveDate": "2024.12"
+  },
+  {
+    "name": "彩殼堡",
+    "lat": 40.2368611,
+    "lng": 116.16375,
+    "type": "record",
+    "archiveDate": "2025.01"
+  },
+  {
+    "name": "削巖殘居",
+    "lat": 30.425167,
+    "lng": 104.096167,
+    "type": "record",
+    "archiveDate": "2025.02"
+  },
+  {
+    "name": "遷痕空埠",
+    "lat": 30.43251,
+    "lng": 104.04063,
+    "type": "record",
+    "archiveDate": "2026.06"
+  },
+  {
+    "name": "山骸窟殿",
+    "lat": 34.5275555,
+    "lng": 119.1429722,
+    "type": "record",
+    "archiveDate": "2026.07"
+  }
+];
+
+const i18n = {
+  zh: {
+    document_title:'遺構館 · 檔案系統', panel_title:'遺構館 · 檔案系統', form_title:'檔案投稿', mark_location:'標記地點', layers_title:'顯示層',
+    layer_border:'國家邊界', layer_satellite:'衛星圖', layer_terrain:'地形等高線', layer_human:'人類居住痕跡', layer_archive:'已檔案的遺構', layer_visitors:'他人投稿地點',
+    archivist:'歸檔者', coordinate:'坐標', attachment:'添加附件', drag_pin:'拖放標記', place_title:'地名標題', description:'簡介', admin_archive:'歸檔', visitor_submit:'訪客投稿',
+    coord_invalid:'坐標格式無效。', locating:'正在定位坐標…', locate_ready:'已定位。可拖動地圖檢查位置，或點擊地圖微調。',
+    add_location:'添加地點', location_added:'地點已添加，檔案投稿已展開。', draft_tooltip:'待歸檔地點',
+    required:'請完整填寫歸檔者、坐標、時間、地名與簡介。', sending:'正在傳送檔案…', sent_admin:'管理員檔案已送出。', sent_visitor:'訪客投稿已送出。', submit_failed:'投稿失敗。', files_too_large:'附件最多 5 個，總大小不超過 8 MB。',
+    new_record_confirm_title:'新建檔案', new_record_confirm_body:'清除目前未提交的內容並建立一份新檔案？', confirm:'確認', cancel:'取消', new_record_title:'新建檔案', form_open:'展開檔案投稿', form_close:'收起檔案投稿'
+  },
+  en: {
+    document_title:'Relic Archive · Filing System', panel_title:'Relic Archive · Filing System', form_title:'Archive Submission', mark_location:'Mark Location', layers_title:'Visible Layers',
+    layer_border:'National Borders', layer_satellite:'Satellite', layer_terrain:'Terrain Contours', layer_human:'Human Settlement Traces', layer_archive:'Archived Relics', layer_visitors:'Visitor Submissions',
+    archivist:'Archivist', coordinate:'Coordinates', attachment:'Add Attachment', drag_pin:'Drag Marker', place_title:'Place Title', description:'Description', admin_archive:'Archive', visitor_submit:'Visitor Submit',
+    coord_invalid:'Invalid coordinates.', locating:'Locating coordinates…', locate_ready:'Located. Drag the map to inspect, or click the map to refine the point.',
+    add_location:'Add Location', location_added:'Location added. Submission form opened.', draft_tooltip:'Pending archive point',
+    required:'Complete archivist, coordinates, date, title and description.', sending:'Transmitting archive…', sent_admin:'Administrator archive sent.', sent_visitor:'Visitor submission sent.', submit_failed:'Submission failed.', files_too_large:'Maximum 5 attachments and 8 MB total.',
+    new_record_confirm_title:'New Record', new_record_confirm_body:'Clear all unsubmitted content and create a new archive record?', confirm:'Confirm', cancel:'Cancel', new_record_title:'New record', form_open:'Open archive submission', form_close:'Close archive submission'
+  },
+  ja: {
+    document_title:'遺構館・アーカイブシステム', panel_title:'遺構館・アーカイブシステム', form_title:'アーカイブ投稿', mark_location:'地点を標記', layers_title:'表示レイヤー',
+    layer_border:'国境', layer_satellite:'衛星画像', layer_terrain:'地形等高線', layer_human:'人間居住の痕跡', layer_archive:'収蔵済み遺構', layer_visitors:'来訪者投稿地点',
+    archivist:'記録者', coordinate:'座標', attachment:'添付追加', drag_pin:'標記をドラッグ', place_title:'地点名', description:'概要', admin_archive:'収蔵', visitor_submit:'来訪者投稿',
+    coord_invalid:'座標形式が無効です。', locating:'座標を定位中…', locate_ready:'定位しました。地図を動かして確認するか、地図をクリックして微調整できます。',
+    add_location:'地点を追加', location_added:'地点を追加し、投稿フォームを展開しました。', draft_tooltip:'収蔵待ち地点',
+    required:'記録者・座標・日付・地点名・概要を入力してください。', sending:'アーカイブを送信中…', sent_admin:'管理者アーカイブを送信しました。', sent_visitor:'来訪者投稿を送信しました。', submit_failed:'送信に失敗しました。', files_too_large:'添付は5件・合計8 MBまでです。',
+    new_record_confirm_title:'新規アーカイブ', new_record_confirm_body:'未送信の内容をすべて消去し、新しいアーカイブを作成しますか？', confirm:'確認', cancel:'取消', new_record_title:'新規アーカイブ', form_open:'投稿フォームを開く', form_close:'投稿フォームを閉じる'
+  }
+};
+const decodeTokens = new WeakMap();
+let languageSwitchToken = 0;
+let initialLanguageTimer = null;
+let currentLang = 'en';
+
+function tr(key) {
+  return i18n[currentLang][key] || i18n.zh[key] || key;
+}
+
+function cyberDecodeTranslate(element, targetText, duration = 1000) {
+  const originalText = element.textContent || '';
+  const originalLen = originalText.length;
+  const targetLen = targetText.length;
+  const startTime = performance.now();
+  const token = (decodeTokens.get(element) || 0) + 1;
+  decodeTokens.set(element, token);
+  let lastString = null;
+
+  function updateFrame(now) {
+    if (decodeTokens.get(element) !== token) return;
+
+    const progress = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const targetCut = Math.round(targetLen * eased);
+    const originalCut = Math.round(originalLen * eased);
+    const nextText = targetText.substring(0, targetCut) + originalText.substring(originalCut);
+
+    if (nextText !== lastString) {
+      element.textContent = nextText;
+      lastString = nextText;
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(updateFrame);
+    } else if (element.textContent !== targetText) {
+      element.textContent = targetText;
+    }
+  }
+
+  requestAnimationFrame(updateFrame);
+}
+
+function isElementOnScreen(element) {
+  const style = getComputedStyle(element);
+  if (style.display === 'none' || style.visibility === 'hidden') return false;
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0 &&
+    rect.bottom >= 0 && rect.right >= 0 &&
+    rect.top <= window.innerHeight && rect.left <= window.innerWidth;
+}
+
+function applyI18n({ animate = false } = {}) {
+  const switchToken = ++languageSwitchToken;
+  document.documentElement.lang = currentLang === 'ja' ? 'ja' : currentLang === 'en' ? 'en' : 'zh-Hant';
+  document.title = tr('document_title');
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const targetText = tr(el.dataset.i18n);
+    if (el.textContent === targetText) return;
+
+    if (!animate || !isElementOnScreen(el)) {
+      decodeTokens.set(el, (decodeTokens.get(el) || 0) + 1);
+      el.textContent = targetText;
+      return;
+    }
+
+    const delay = Math.random() * 200;
+    setTimeout(() => {
+      if (switchToken !== languageSwitchToken) return;
+      if (!isElementOnScreen(el)) {
+        decodeTokens.set(el, (decodeTokens.get(el) || 0) + 1);
+        el.textContent = targetText;
+        return;
+      }
+      cyberDecodeTranslate(el, targetText, 1000);
+    }, delay);
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = tr(el.dataset.i18nPlaceholder);
+  });
+
+  document.querySelectorAll('#language-switcher [data-lang]').forEach(button => {
+    button.classList.toggle('active', button.dataset.lang === currentLang);
+  });
+
+  const handle = document.getElementById('form-handle');
+  if (handle) handle.title = tr(document.body.classList.contains('form-open') ? 'form_close' : 'form_open');
+  const newRecord = document.getElementById('new-record');
+  if (newRecord) newRecord.title = tr('new_record_title');
+  if (locatorActive && candidateGeo) showCandidatePopup();
+  if (draftMarker) draftMarker.setTooltipContent(tr('draft_tooltip'));
+}
+
+function switchLanguage(lang, { animate = true, updateUrl = true } = {}) {
+  if (!i18n[lang]) return;
+  currentLang = lang;
+  if (updateUrl) {
+    const url = new URL(location.href);
+    url.searchParams.set('lang', lang);
+    history.replaceState(null, '', url);
+  }
+  applyI18n({ animate });
+}
+
+document.querySelectorAll('#language-switcher [data-lang]').forEach(button => {
+  button.addEventListener('click', () => {
+    if (initialLanguageTimer) {
+      clearTimeout(initialLanguageTimer);
+      initialLanguageTimer = null;
+    }
+    if (button.dataset.lang === currentLang) return;
+    switchLanguage(button.dataset.lang, { animate: true, updateUrl: true });
+  });
+});
+
+function geoToSVG(lat, lng) {
+  let shiftedLng = lng + 180;
+  if (shiftedLng > 180) shiftedLng -= 360;
+  let x = ((shiftedLng + 180) / 360 - 0.5) * GEO_SCALE + 0.5;
+  let y = ((lat + 90) / 180 - 0.5) * GEO_SCALE + 0.5;
+  x = (x - 0.5) * WORLD_SCALE + 0.5;
+  y = (y - 0.5) * WORLD_SCALE + 0.5;
+  x += OFFSET_X;
+  y += OFFSET_Y;
+  x = Math.max(0, Math.min(1, x));
+  y = Math.max(0, Math.min(1, y));
+  return [y * MAP_HEIGHT, x * MAP_WIDTH];
+}
+
+function mapToGeo(y, x) {
+  x /= MAP_WIDTH;
+  y /= MAP_HEIGHT;
+  x -= OFFSET_X;
+  y -= OFFSET_Y;
+  x = (x - 0.5) / WORLD_SCALE + 0.5;
+  y = (y - 0.5) / WORLD_SCALE + 0.5;
+  x = (x - 0.5) / GEO_SCALE + 0.5;
+  y = (y - 0.5) / GEO_SCALE + 0.5;
+  const lng = ((x + 0.5) % 1) * 360 - 180;
+  return { lat: y * 180 - 90, lng };
+}
+
+
+function mapPointFromGeo(lat, lng) {
+  const [y, x] = geoToSVG(lat, lng);
+  return L.latLng(y, x);
+}
+
+const map = L.map('archive-map', {
+  crs: L.CRS.Simple,
+  minZoom: -1.8,
+  maxZoom: 8,
+  zoomControl: false,
+  attributionControl: false,
+  inertia: true
+});
+const bounds = [[0, 0], [MAP_HEIGHT, MAP_WIDTH]];
+
+map.createPane('satelliteArchivePane');
+map.createPane('terrainArchivePane');
+map.createPane('humanArchivePane');
+map.createPane('borderArchivePane');
+map.getPane('satelliteArchivePane').style.zIndex = '160';
+map.getPane('terrainArchivePane').style.zIndex = '180';
+map.getPane('humanArchivePane').style.zIndex = '200';
+map.getPane('borderArchivePane').style.zIndex = '220';
+for (const paneName of ['satelliteArchivePane', 'terrainArchivePane', 'humanArchivePane', 'borderArchivePane']) {
+  map.getPane(paneName).style.pointerEvents = 'none';
+}
+
+const ruinLayer = L.imageOverlay('assets/ruin-map-clean.svg', bounds, { pane: 'humanArchivePane' }).addTo(map);
+map.fitBounds(bounds, { animate: false });
+requestAnimationFrame(() => {
+  const initialShift = map.getSize().x * 0.10;
+  map.panBy([-initialShift, 0], { animate: false });
+});
+
+const archiveMarkers = L.layerGroup().addTo(map);
+const visitorMarkers = L.layerGroup();
+function addExistingMarkers() {
+  archiveMarkers.clearLayers();
+  for (const site of EXISTING_SITES) {
+    const cls = site.type === 'garden' ? 'garden-dot' : 'record-dot';
+    const icon = L.divIcon({
+      className: 'archive-marker',
+      html: `<span class="${cls}"></span>`,
+      iconSize: [10, 10],
+      iconAnchor: [5, 5]
+    });
+    L.marker(mapPointFromGeo(site.lat, site.lng), { icon })
+      .bindTooltip(`${site.name}${site.archiveDate ? ' · ' + site.archiveDate : ''}`, { className: 'archive-tooltip', direction: 'top', offset: [0, -4] })
+      .addTo(archiveMarkers);
+  }
+}
+addExistingMarkers();
+
+const optionalLayers = {};
+function setImageLayer(key, file, enabled, pane) {
+  if (enabled) {
+    if (!optionalLayers[key]) optionalLayers[key] = L.imageOverlay(file, bounds, { interactive: false, pane });
+    if (!map.hasLayer(optionalLayers[key])) optionalLayers[key].addTo(map);
+  } else if (optionalLayers[key] && map.hasLayer(optionalLayers[key])) {
+    map.removeLayer(optionalLayers[key]);
+  }
+}
+
+setImageLayer('terrain', 'assets/terrain-map.svg', true, 'terrainArchivePane');
+
+document.getElementById('layer-human').addEventListener('change', e => e.target.checked ? ruinLayer.addTo(map) : map.removeLayer(ruinLayer));
+document.getElementById('layer-border').addEventListener('change', e => setImageLayer('border', 'assets/border-map.svg', e.target.checked, 'borderArchivePane'));
+document.getElementById('layer-satellite').addEventListener('change', e => setImageLayer('satellite', 'assets/satellite.webp', e.target.checked, 'satelliteArchivePane'));
+document.getElementById('layer-terrain').addEventListener('change', e => setImageLayer('terrain', 'assets/terrain-map.svg', e.target.checked, 'terrainArchivePane'));
+document.getElementById('layer-archive').addEventListener('change', e => e.target.checked ? archiveMarkers.addTo(map) : map.removeLayer(archiveMarkers));
+document.getElementById('layer-visitors').addEventListener('change', async e => {
+  if (!e.target.checked) { map.removeLayer(visitorMarkers); return; }
+  if (!visitorMarkers.getLayers().length) await loadVisitorSites();
+  visitorMarkers.addTo(map);
+});
+
+async function loadVisitorSites() {
+  try {
+    const res = await fetch('assets/visitor-sites.json', { cache: 'no-store' });
+    if (!res.ok) return;
+    const list = await res.json();
+    for (const site of list) {
+      if (!Number.isFinite(Number(site.lat)) || !Number.isFinite(Number(site.lng))) continue;
+      const icon = L.divIcon({ className: 'archive-marker', html: '<span class="visitor-dot"></span>', iconSize: [10, 10], iconAnchor: [5, 5] });
+      L.marker(mapPointFromGeo(Number(site.lat), Number(site.lng)), { icon })
+        .bindTooltip(site.title || site.name || 'visitor', { className: 'archive-tooltip' })
+        .addTo(visitorMarkers);
+    }
+  } catch (_) {}
+}
+
+const dragLocationPin = document.getElementById('drag-location-pin');
+let pinDragGhost = null;
+let pinDragPointerId = null;
+
+function movePinGhost(clientX, clientY) {
+  if (!pinDragGhost) return;
+  pinDragGhost.style.left = `${clientX}px`;
+  pinDragGhost.style.top = `${clientY}px`;
+}
+
+function clearPinDrag() {
+  document.body.classList.remove('pin-dragging');
+  if (pinDragGhost) pinDragGhost.remove();
+  pinDragGhost = null;
+  pinDragPointerId = null;
+}
+
+function isMapDropTarget(clientX, clientY) {
+  const target = document.elementFromPoint(clientX, clientY);
+  return Boolean(target && target.closest('#archive-map'));
+}
+
+dragLocationPin.addEventListener('pointerdown', event => {
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  event.preventDefault();
+  pinDragPointerId = event.pointerId;
+  document.body.classList.add('pin-dragging');
+
+  pinDragGhost = document.createElement('div');
+  pinDragGhost.className = 'pin-drag-ghost';
+  pinDragGhost.innerHTML = dragLocationPin.innerHTML;
+  document.body.appendChild(pinDragGhost);
+  movePinGhost(event.clientX, event.clientY);
+
+  try { dragLocationPin.setPointerCapture(event.pointerId); } catch (_) {}
+});
+
+window.addEventListener('pointermove', event => {
+  if (pinDragPointerId !== event.pointerId || !pinDragGhost) return;
+  movePinGhost(event.clientX, event.clientY);
+});
+
+window.addEventListener('pointerup', event => {
+  if (pinDragPointerId !== event.pointerId || !pinDragGhost) return;
+
+  if (isMapDropTarget(event.clientX, event.clientY)) {
+    const rect = map.getContainer().getBoundingClientRect();
+    const mapPoint = L.point(event.clientX - rect.left, event.clientY - rect.top);
+    const latLng = map.containerPointToLatLng(mapPoint);
+    const point = mapToGeo(latLng.lat, latLng.lng);
+    setCandidate(point, { fly: false });
+  }
+
+  clearPinDrag();
+});
+
+window.addEventListener('pointercancel', event => {
+  if (pinDragPointerId === event.pointerId) clearPinDrag();
+});
+
+const latInput = document.getElementById('coord-lat');
+const lngInput = document.getElementById('coord-lng');
+const searchStatus = document.getElementById('search-status');
+const crosshair = document.getElementById('archive-crosshair');
+
+let locatorActive = false;
+let candidateGeo = null;
+let locatorPopup = null;
+let draftMarker = null;
+let crossRaf = null;
+
+function readCoordInputs() {
+  const lat = Number(latInput.value.trim());
+  const lng = Number(lngInput.value.trim());
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return { lat, lng };
+}
+
+function writeCoordInputs(point) {
+  latInput.value = point.lat.toFixed(7);
+  lngInput.value = point.lng.toFixed(7);
+}
+
+function coordinateString(point) {
+  return `${point.lat.toFixed(7)}, ${point.lng.toFixed(7)}`;
+}
+
+
+function updateCrosshair() {
+  if (!locatorActive || !candidateGeo || crossRaf) return;
+  crossRaf = requestAnimationFrame(() => {
+    const point = map.latLngToContainerPoint(mapPointFromGeo(candidateGeo.lat, candidateGeo.lng));
+    const x = Math.max(0, Math.min(window.innerWidth, point.x));
+    const y = Math.max(0, Math.min(window.innerHeight, point.y));
+    crosshair.style.setProperty('--cross-x', `${x}px`);
+    crosshair.style.setProperty('--cross-y', `${y}px`);
+    crossRaf = null;
+  });
+}
+
+function setCandidate(point, { fly = false } = {}) {
+  candidateGeo = { lat: point.lat, lng: point.lng };
+  locatorActive = true;
+  writeCoordInputs(candidateGeo);
+  crosshair.classList.add('active');
+  updateCrosshair();
+  showCandidatePopup();
+
+  if (fly) {
+    searchStatus.textContent = tr('locating');
+    const target = mapPointFromGeo(candidateGeo.lat, candidateGeo.lng);
+    map.flyTo(target, Math.max(map.getZoom(), 4.8), { duration: 1.25 });
+    window.setTimeout(() => {
+      if (locatorActive) searchStatus.textContent = tr('locate_ready');
+    }, 1300);
+  } else {
+    searchStatus.textContent = tr('locate_ready');
+  }
+}
+
+function showCandidatePopup() {
+  if (!candidateGeo) return;
+  if (locatorPopup) map.closePopup(locatorPopup);
+
+  const content = document.createElement('div');
+  content.className = 'locator-popup-content';
+
+  const coords = document.createElement('div');
+  coords.className = 'locator-popup-coord';
+  coords.textContent = coordinateString(candidateGeo);
+
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.className = 'add-location-button';
+  addButton.textContent = `[${tr('add_location')}]`;
+  addButton.addEventListener('click', addCandidateLocation);
+
+  content.append(coords, addButton);
+  locatorPopup = L.popup({ className: 'locator-popup', closeButton: false, autoPan: false, offset: [0, -10] })
+    .setLatLng(mapPointFromGeo(candidateGeo.lat, candidateGeo.lng))
+    .setContent(content)
+    .openOn(map);
+}
+
+function addCandidateLocation() {
+  if (!candidateGeo) return;
+  if (draftMarker) map.removeLayer(draftMarker);
+
+  const icon = L.divIcon({ className: 'archive-marker', html: '<span class="draft-dot"></span>', iconSize: [12, 12], iconAnchor: [6, 6] });
+  draftMarker = L.marker(mapPointFromGeo(candidateGeo.lat, candidateGeo.lng), { icon, draggable: true })
+    .bindTooltip(tr('draft_tooltip'), { className: 'archive-tooltip', direction: 'top', offset: [0, -6] })
+    .addTo(map);
+
+  draftMarker.on('dragend', () => {
+    const p = draftMarker.getLatLng();
+    candidateGeo = mapToGeo(p.lat, p.lng);
+    writeCoordInputs(candidateGeo);
+    document.getElementById('archive-coordinate').value = coordinateString(candidateGeo);
+    });
+
+  document.getElementById('archive-coordinate').value = coordinateString(candidateGeo);
+  locatorActive = false;
+  crosshair.classList.remove('active');
+  map.closePopup();
+  locatorPopup = null;
+  searchStatus.textContent = tr('location_added');
+  setFormOpen(true);
+}
+
+document.getElementById('locate-coordinate').addEventListener('click', () => {
+  const point = readCoordInputs();
+  if (!point) { searchStatus.textContent = tr('coord_invalid'); return; }
+  if (draftMarker) { map.removeLayer(draftMarker); draftMarker = null; }
+  setCandidate(point, { fly: true });
+});
+
+map.on('click', e => {
+  if (!locatorActive) return;
+  const point = mapToGeo(e.latlng.lat, e.latlng.lng);
+  setCandidate(point, { fly: false });
+});
+
+map.on('move zoom resize', updateCrosshair);
+
+const formShell = document.getElementById('archive-form-shell');
+const formHandle = document.getElementById('form-handle');
+const formHandleGlyph = formHandle.querySelector('.form-handle-glyph');
+function setFormOpen(open) {
+  formShell.classList.toggle('open', open);
+  document.body.classList.toggle('form-open', open);
+  formShell.setAttribute('aria-hidden', String(!open));
+  formHandle.setAttribute('aria-expanded', String(open));
+  formHandleGlyph.textContent = open ? '›' : '‹';
+  formHandle.title = tr(open ? 'form_close' : 'form_open');
+}
+formHandle.addEventListener('click', () => setFormOpen(!formShell.classList.contains('open')));
+
+const attachments = document.getElementById('attachments');
+const attachmentCount = document.getElementById('attachment-count');
+const fileList = document.getElementById('file-list');
+attachments.addEventListener('change', () => {
+  const files = [...attachments.files];
+  attachmentCount.textContent = String(files.length);
+  fileList.textContent = files.map(f => `${f.name} · ${(f.size / 1024 / 1024).toFixed(2)} MB`).join(' / ');
+});
+
+const newRecordDialog = document.getElementById('new-record-dialog');
+const newRecordConfirm = document.getElementById('new-record-confirm');
+const newRecordCancel = document.getElementById('new-record-cancel');
+
+function hasArchiveWork() {
+  const form = document.getElementById('archive-form');
+  const hasFormValue = [...form.querySelectorAll('input:not([type="file"]), textarea')].some(el => el.value.trim());
+  return hasFormValue || attachments.files.length > 0 || Boolean(candidateGeo) || Boolean(draftMarker) || locatorActive;
+}
+
+function openNewRecordDialog() {
+  newRecordDialog.hidden = false;
+  newRecordDialog.setAttribute('aria-hidden', 'false');
+}
+
+function closeNewRecordDialog() {
+  newRecordDialog.hidden = true;
+  newRecordDialog.setAttribute('aria-hidden', 'true');
+}
+
+function resetArchiveWorkspace() {
+  document.getElementById('archive-form').reset();
+  attachmentCount.textContent = '0';
+  fileList.textContent = '';
+  const status = document.getElementById('submit-status');
+  status.textContent = '';
+  status.className = 'submit-status';
+  searchStatus.textContent = '';
+  latInput.value = '';
+  lngInput.value = '';
+  candidateGeo = null;
+  locatorActive = false;
+  crosshair.classList.remove('active');
+  if (locatorPopup) { map.closePopup(locatorPopup); locatorPopup = null; }
+  if (draftMarker) { map.removeLayer(draftMarker); draftMarker = null; }
+  setFormOpen(true);
+}
+
+document.getElementById('new-record').addEventListener('click', () => {
+  if (hasArchiveWork()) openNewRecordDialog();
+  else resetArchiveWorkspace();
+});
+newRecordCancel.addEventListener('click', closeNewRecordDialog);
+newRecordConfirm.addEventListener('click', () => { closeNewRecordDialog(); resetArchiveWorkspace(); });
+newRecordDialog.querySelector('.system-dialog-backdrop').addEventListener('click', closeNewRecordDialog);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !newRecordDialog.hidden) closeNewRecordDialog();
+});
+
+function formValid() {
+  const ids = ['archivist', 'archive-coordinate', 'archive-date', 'place-title', 'description'];
+  return ids.every(id => document.getElementById(id).value.trim());
+}
+function filesValid() {
+  const files = [...attachments.files];
+  return files.length <= MAX_FILES && files.reduce((sum, file) => sum + file.size, 0) <= MAX_TOTAL_FILE_BYTES;
+}
+
+async function submitArchive(mode) {
+  const status = document.getElementById('submit-status');
+  if (!formValid()) { status.className = 'submit-status error'; status.textContent = tr('required'); return; }
+  if (!filesValid()) { status.className = 'submit-status error'; status.textContent = tr('files_too_large'); return; }
+
+  const data = new FormData();
+  data.set('mode', mode);
+  data.set('archivist', document.getElementById('archivist').value.trim());
+  data.set('coordinate', document.getElementById('archive-coordinate').value.trim());
+  data.set('date', document.getElementById('archive-date').value);
+  data.set('title', document.getElementById('place-title').value.trim());
+  data.set('description', document.getElementById('description').value.trim());
+  data.set('placeSearch', '');
+  if (mode === 'admin') data.set('adminPassword', document.getElementById('admin-password').value);
+  for (const file of attachments.files) data.append('attachments', file, file.name);
+
+  const turnstile = document.querySelector('[name="cf-turnstile-response"]');
+  if (turnstile) data.set('turnstileToken', turnstile.value);
+
+  status.className = 'submit-status';
+  status.textContent = tr('sending');
+  try {
+    const res = await fetch(SUBMISSION_ENDPOINT, { method: 'POST', body: data });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    status.className = 'submit-status success';
+    status.textContent = mode === 'admin' ? tr('sent_admin') : tr('sent_visitor');
+    if (mode === 'visitor') document.getElementById('admin-password').value = '';
+  } catch (err) {
+    console.error(err);
+    status.className = 'submit-status error';
+    status.textContent = `${tr('submit_failed')} ${err.message || ''}`;
+  }
+}
+
+document.getElementById('admin-submit').addEventListener('click', () => void submitArchive('admin'));
+document.getElementById('visitor-submit').addEventListener('click', () => void submitArchive('visitor'));
+
+applyI18n({ animate: false });
+initialLanguageTimer = setTimeout(() => {
+  initialLanguageTimer = null;
+  switchLanguage('zh', { animate: true, updateUrl: true });
+}, 800);
+
+if (TURNSTILE_SITE_KEY) {
+  const script = document.createElement('script');
+  script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  script.async = true;
+  script.defer = true;
+  script.onload = () => turnstile.render('#turnstile-slot', { sitekey: TURNSTILE_SITE_KEY, theme: 'light' });
+  document.head.appendChild(script);
+}
