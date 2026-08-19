@@ -1,0 +1,1370 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hans" translate="no">
+
+<head>
+    <meta name="google" content="notranslate">
+    <meta name="robots" content="notranslate">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Ruin Atlas · Relic Archive</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css?v=2" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
+</head>
+
+<body>
+
+    <!-- Frame -->
+    <svg class="perspective-line top-left"><line x1="0" y1="0" x2="100%" y2="100%" /></svg>
+    <svg class="perspective-line top-right"><line x1="100%" y1="0" x2="0" y2="100%" /></svg>
+    <div id="main-viewport-frame"></div>
+    <div id="suprematist-frame" style="position: fixed; inset: 0; z-index: 870; pointer-events: none;"></div>
+
+    <!-- Global compass -->
+    <div id="global-compass-module" class="global-compass-module">
+
+        <div class="compass-pentagon-outer">
+
+            <div class="compass-pentagon-inner">
+
+
+                <div id="global-compass-btn" class="global-compass-btn">
+                    <div class="compass-circle-icon">
+                        <div class="compass-icon-arrow"></div>
+                    </div>
+                </div>
+
+
+                <div class="compass-wheel-wrapper">
+                    <div id="compass-site-wheel" class="compass-site-wheel">
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="title-language-wheel" class="title-wheel-container">
+        <div class="wheel-track" id="wheel-track">
+            <div class="wheel-item active" data-lang="en">Ruin Atlas</div>
+            <div class="wheel-item" data-lang="zh">墟域图</div>
+            <div class="wheel-item" data-lang="ja">墟域図</div>
+
+        </div>
+        <div class="wheel-indicators">
+
+            <div class="indicator-row active">
+                <span class="wheel-dot"></span>
+                <span class="wheel-label">map</span>
+            </div>
+            <div class="indicator-row">
+                <span class="wheel-dot"></span>
+                <span class="wheel-label">地图</span>
+            </div>
+            <div class="indicator-row">
+                <span class="wheel-dot"></span>
+                <span class="wheel-label">ちず</span>
+            </div>
+
+        </div>
+    </div>
+    <div id="stack-garden" class="file-stack position-right"></div>
+    <div id="stack-record" class="file-stack position-left"></div>
+
+
+    <!-- Attachment viewer -->
+    <div id="attachment-viewer" class="attachment-viewer">
+        <div class="attachment-viewer-inner">
+            <div class="attachment-sheet">
+                <div class="attachment-hud">
+
+
+                    <div id="manual-score" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_card_view">卡片检视</div>
+                        <div class="hud-manual-content">
+
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-joystick">
+                                <div class="manual-line" data-i18n="manual_joystick">——摇杆</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——缩小</div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div id="manual-pdf" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_doc_view">文档阅览</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-page">
+                                <div class="manual-line" data-i18n="manual_page_up">——上翻页</div>
+                                <div class="manual-line" data-i18n="manual_page_down">——下翻页</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——缩小</div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div id="manual-image" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_img_view">图像检视</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-page">
+                                <div class="manual-line" data-i18n="manual_item_prev">——上一项</div>
+                                <div class="manual-line" data-i18n="manual_item_next">——下一项</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——缩小</div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div id="manual-txt" class="hud-manual">
+                        <div class="hud-manual-title" data-i18n="manual_txt_view">文本阅览</div>
+                        <div class="hud-manual-content">
+                            <div class="manual-group group-reset">
+                                <div class="manual-line" data-i18n="manual_reset">——重置</div>
+                            </div>
+                            <div class="manual-group group-translate">
+                                <div class="manual-line" data-i18n="manual_pan_up">——上平移</div>
+                                <div class="manual-line offset-line" data-i18n="manual_pan_lr">————左右平移</div>
+                                <div class="manual-line" data-i18n="manual_pan_down">——下平移</div>
+                            </div>
+                            <div class="manual-group group-zoom">
+                                <div class="manual-line" data-i18n="manual_zoom_in">——放大</div>
+                                <div class="manual-line" data-i18n="manual_zoom_out">——缩小</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="reset">⿴</div>
+                    <div class="hud-pdf-page" id="pdf-page-hud" style="display: none; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px;">
+                        <div id="pdf-prev">△</div>
+                        <div id="pdf-page-num" style="font-size: 10px; opacity: 0.6; pointer-events: none;">1/1</div>
+                        <div id="pdf-next">▽</div>
+                    </div>
+                    <div class="hud-image-page" id="image-page-hud" style="display: none; flex-direction: column; align-items: center; gap: 4px; padding-top: 6px;">
+                        <div id="image-prev">△</div>
+                        <div id="image-page-num" style="font-size: 10px; opacity: 0.6; pointer-events: none;">1/1</div>
+                        <div id="image-next">▽</div>
+                    </div>
+                    <div class="score-rotate-hud">
+                        <div class="hud-divider"></div>
+                        <div class="hud-rotate">
+                            <div class="joystick-wrap" id="joystick-wrap">
+                                <div id="joystick" class="joystick-base">
+
+                                    <div class="joystick-panel">
+                                        <div id="joystick-light" class="joystick-light"></div>
+
+                                        <div class="joystick-tick tick-top"></div>
+                                        <div class="joystick-tick tick-right"></div>
+                                        <div class="joystick-tick tick-bottom"></div>
+                                        <div class="joystick-tick tick-left"></div>
+                                    </div>
+
+
+                                    <div id="joystick-knob"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hud-divider"></div>
+                    <div class="hud-move">
+                        <div id="move-up">↑</div>
+                        <div class="hud-middle">
+                            <div id="move-left">←</div>
+                            <div id="move-right">→</div>
+                        </div>
+                        <div id="move-down">↓</div>
+                    </div>
+
+                    <div class="hud-divider"></div>
+                    <div class="hud-zoom">
+                        <div id="zoom-in">+</div>
+                        <div id="zoom-out">−</div>
+                    </div>
+                </div>
+
+                <div class="attachment-close">×</div>
+                <button id="document-translation-toggle" class="document-translation-toggle" type="button" aria-pressed="false" aria-label="Document translation">
+                    <span id="document-translation-toggle-label">译</span>
+                </button>
+                <div id="document-translation-loading" class="document-translation-loading" aria-live="polite"></div>
+                <div class="attachment-meta">
+                    <div id="attachment-title" class="attachment-title"></div>
+                    <div id="attachment-filename" class="attachment-filename"></div>
+                </div>
+
+                <div id="attachment-stage" class="attachment-stage">
+
+                    <div id="manual-score-intro" class="hud-manual">
+                        <div class="hud-manual-content">
+                            <div class="manual-intro" data-i18n="manual_card_intro">向目标物体移动的空间方向拉动摇杆，物体由中心原点翻转，获得全角度检视。</div>
+                        </div>
+                    </div>
+                    <div id="media-wrapper" class="media-wrapper"></div>
+                    <div id="score-hud-shadow" class="score-hud score-hud-shadow">
+                        <div id="manual-folly" class="hud-manual">
+                            <div class="hud-manual-title" data-i18n="manual_overlay_layer">叠合解析层</div>
+                            <div class="hud-manual-content">
+                                <div class="manual-intro" data-i18n="manual_calibrate">校准：滑鼠悬停指示器，锁定于图形记谱轨迹。</div>
+                                <div class="manual-intro" data-i18n="manual_sync">同步：指针随影像进程，即时指向当前对应的的音符。</div>
+                            </div>
+                        </div>
+                        <div class="score-header" data-i18n="score_header_graphic">图形记谱—————————</div>
+                        <div class="score-body">
+                            <img id="score-shadow-image" src="">
+                            <div class="shadow-focus-corners">
+                                <span class="corner tl"></span><span class="corner tr"></span>
+                                <span class="corner bl"></span><span class="corner br"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="score-hud" class="score-hud open">
+                        <div class="score-header" id="score-toggle" data-i18n="score_header_sync">—————————同步指示器</div>
+                        <div class="score-body">
+                            <img id="score-image" src="" />
+                            <div class="focus-corners">
+                                <span class="corner tl"></span><span class="corner tr"></span>
+                                <span class="corner bl"></span><span class="corner br"></span>
+                            </div>
+                            <div id="score-overlay">
+                                <svg id="arc-overlay" class="arc-overlay" viewBox="-100 -100 200 200" xmlns="http://www.w3.org/2000/svg">
+                                    <g id="arcs-container" style="transform-origin: -17px -52.5px;">
+                                        <path transform="translate(-10, -50) rotate(160)" class="score-arc" d="M -7.07,-7.07 A 10,10 0 0,1 7.07,-7.07" vector-effect="non-scaling-stroke" />
+                                        <path transform="translate(-15, -55) rotate(-150)" class="score-arc" d="M -14.14,-14.14 A 20,20 0 0,1 14.14,-14.14" vector-effect="non-scaling-stroke" />
+                                        <path transform="translate(-10, -55) rotate(160)" class="score-arc" d="M -21.21,-21.21 A 30,30 0 0,1 21.21,-21.21" vector-effect="non-scaling-stroke" />
+                                    </g>
+                                </svg>
+                            </div>
+                            <div id="score-playhead"></div>
+                            <div id="score-pulse"></div>
+                            <div id="score-playhead-2"></div>
+                        </div>
+                    </div>
+
+                    <div class="video-ui" id="video-ui">
+                        <div id="startup-manual-instrument" class="hud-manual startup-video-manual">
+                            <div class="hud-manual-content">
+                                <div class="manual-group">
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_play_pause">播放/暂停</span><span class="manual-dash">——</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="startup-manual-folly" class="hud-manual startup-video-manual">
+                            <div class="hud-manual-content">
+                                <div class="manual-group">
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_score_sync">视频-乐谱同步</span><span class="manual-dash">——</span>
+                                    </div>
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_play_pause_chapter">播放/暂停/章节</span><span class="manual-dash">——</span>
+                                    </div>
+                                    <div class="manual-line">
+                                        <span class="manual-text" data-i18n="video_chapter_node">章节节点</span><span class="manual-dash">——</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="video-progress"><div id="video-progress-bar"></div></div>
+                        <div class="video-stack">
+                            <div class="video-chapters"></div>
+                            <div class="video-controls">
+                                <div id="video-play">▽</div>
+                                <div id="video-pause">□</div>
+                                <div id="chapter-toggle" class="chapter-toggle">⋯</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="attachment-desc" class="attachment-desc"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Map -->
+    <div id="map-init-hint" class="map-init-hint" data-i18n="map_init_hint">拖曳 · 缩放以检视墟域图</div>
+
+
+    <div id="map-nav-hint" class="map-nav-hint">
+        <span data-i18n="nav_prefix">正在导航前往：</span>
+        <span id="nav-target-name"></span>
+    </div>
+    <div id="map-dir-hint" style="position: fixed; bottom: 27%; left: 52%; transform: translateX(-50%); z-index: 1000; pointer-events: none; font-size: 15px; color: rgba(0, 0, 0, 0.45); opacity: 0; transition: opacity 0.4s ease; letter-spacing: 1.5px;">
+        <span data-i18n="nav_dir_opening">正在打开档案目录...</span>
+    </div>
+    <div id="map"></div>
+
+    <div id="compass-overlay" class="compass-overlay hidden">
+        <div class="compass-container">
+            <div id="compass-handle" class="compass-handle">
+                <div class="handle-core"></div>
+            </div>
+
+            <div class="compass-ring"></div>
+            <div class="compass-asterisk">
+                <div class="line" style="--deg: 0deg; --len: 20vmin;"></div>
+                <div class="line" style="--deg: 45deg; --len: 32vmin;"></div>
+                <div class="line" style="--deg: 90deg; --len: 38vmin;"></div>
+                <div class="line" style="--deg: 135deg; --len: 27vmin;"></div>
+                <div class="line" style="--deg: 180deg; --len: 29vmin;"></div>
+                <div class="line" style="--deg: 225deg; --len: 30vmin;"></div>
+                <div class="line" style="--deg: 270deg; --len: 30vmin;"></div>
+                <div class="line" style="--deg: 315deg; --len: 16vmin;"></div>
+            </div>
+            <div class="compass-dial"></div>
+            <div id="compass-pointer" class="compass-pointer">
+                <div class="compass-arrow">⌃</div>
+            </div>
+        </div>
+        <div class="compass-manual">
+            <div class="manual-title" data-i18n="compass_manual_title">罗盘导航指南</div>
+            <div class="manual-item" data-i18n="compass_out"> ‹( - 圈外：指针外展指向遗构。</div>
+            <div class="manual-item" data-i18n="compass_in"> ›( - 圈内：逆转聚焦遗构原点。</div>
+            <div class="manual-item" data-i18n="compass_center"> ⨀ - 临中：线圈向内收缩定位。</div>
+        </div>
+    </div>
+
+    <div class="ui">
+        <div class="main-title" id="main-title" data-i18n="main_title">废墟园林系列</div>
+        <div id="title-hover-zone"></div>
+        <div id="title-hover-field"></div>
+    </div>
+
+    <div class="hud">
+        <div class="hud-title"></div>
+        <div class="coords" id="coords" data-i18n="coords_lat_lon">经度◓ 纬度◑</div>
+    </div>
+
+    <div id="record-nav">
+        <div id="record-prev" class="record-arrow record-arrow-up"></div>
+        <div id="record-next" class="record-arrow record-arrow-down"></div>
+    </div>
+
+    <!-- Archive drawer -->
+    <div id="archive-drawer" class="drawer">
+        <div class="drawer-header">
+            <div class="drawer-close" onclick="closeDrawer()">×</div>
+        </div>
+        <div class="drawer-inner">
+            <div id="drawer-content">
+                <div class="drawer-body" data-i18n="drawer_select_site">选择一个站点</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="drawer-mask" class="drawer-mask" onclick="closeDrawer()"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+
+    <div id="mobile-left-drawer" class="mobile-side-drawer">
+        <div class="mobile-drawer-content" id="mobile-record-list"></div>
+    </div>
+    <div id="mobile-right-drawer" class="mobile-side-drawer">
+        <div class="mobile-drawer-content" id="mobile-garden-list"></div>
+    </div>
+
+
+    <div id="drawer-opened-bottom-decor">
+        <div class="frosted-shape"></div>
+        <svg class="drawer-perspective-line bottom-left"><line x1="100%" y1="100%" x2="160" y2="0" /></svg>
+        <svg class="drawer-perspective-line bottom-right"><line x1="0" y1="100%" x2="158" y2="0" /></svg>
+        <div class="bottom-decor-labels">
+
+            <span id="opened-trigger-record" class="bottom-trigger btn-close-drawer" style="pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <span class="mobile-menu-btn" id="btn-left-menu-close">≡</span>
+                <span data-i18n="bottom_trigger_record">遗构录・卷</span>
+                <span class="filter-dots" style="letter-spacing: 2px; opacity: 0.8;"></span>
+            </span>
+
+
+            <span id="opened-trigger-ruin" class="bottom-trigger btn-close-drawer" style="pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <span class="filter-dots" style="letter-spacing: 2px; opacity: 0.8;"></span>
+                <span data-i18n="bottom_trigger_ruin">⁙废墟园林・编</span>
+                <span class="mobile-menu-btn" id="btn-right-menu-close">≡</span>
+            </span>
+        </div>
+    </div>
+
+
+    <!-- Index drawer -->
+    <div id="index-drawer">
+        <div id="index-drawer-handle">
+            <div class="frosted-shape"></div>
+            <svg class="drawer-perspective-line bottom-left"><line x1="0" y1="100%" x2="100%" y2="0" /></svg>
+            <svg class="drawer-perspective-line bottom-right"><line x1="100%" y1="100%" x2="0" y2="0" /></svg>
+
+            <div id="bottom-labels">
+
+                <span id="bottom-trigger-record" class="bottom-trigger" style="pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <span class="mobile-menu-btn" id="btn-left-menu">≡</span>
+                    <span data-i18n="bottom_trigger_record">遗构录・卷</span>
+                    <span class="filter-dots" style="letter-spacing: 2px; opacity: 0.8;"></span>
+                </span>
+
+                <span id="bottom-center-label" class="bottom-trigger" style="pointer-events: auto; cursor: pointer;" data-i18n="bottom_center_label">遗构馆</span>
+                <a id="archive-add-link" href="archive-system.html" data-i18n="archive_add">[添加档案]</a>
+
+
+                <span id="bottom-trigger-ruin" class="bottom-trigger" style="pointer-events: auto; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <span class="filter-dots" style="letter-spacing: 2px; opacity: 0.8;"></span>
+                    <span data-i18n="bottom_trigger_ruin">⁙废墟园林・编</span>
+                    <span class="mobile-menu-btn" id="btn-right-menu">≡</span>
+                </span>
+            </div>
+        </div>
+        <div id="index-drawer-content">
+            <div class="index-top-title">
+                <p data-i18n="index_top_title">《墟域图・遗构馆》收录漫游世界时所遇见的人造残构、荒地与被遗忘的地景，并持续建构一个不断扩张的废墟世界。</p>
+            </div>
+            <div class="index-three-columns">
+                <p data-i18n="index_p1">每一处遗构，都保存着稍纵即逝的「如画美」，也孕育着另一场崩解的开始。这些残构成为《废墟园林》的土壤：作品借用仿古遗迹园林中「人为安排毁灭」的美学，将漫长的风化、侵蚀与坍塌浓缩成一场可被观看、聆听与经历的「自毁终章」。⁙</p>
+                <p data-i18n="index_p2">《废墟园林》透过图形记谱与机关结构，将遗构编排成一件由时间、自然，以及建造之初便已写入结构的崩解共同演奏。当秩序逐渐松动，建筑开始以失去语意的声响、振动与回响演绎自身的崩解；材料也在失去功能后，重新显露物性，以及自然重新介入空间的节律。⁙</p>
+            </div>
+            <div class="index-conclusion">
+                <p data-i18n="index_conclusion">最终，所有影像、声音与遗物重新汇入《遗构馆》，成为持续更新的废墟档案，也共同拼凑出仍未完成的《墟域图》。</p>
+            </div>
+            <div class="index-items">
+                <div class="archive-index-system">
+                    <div class="archive-index-title" data-i18n="index_title">— 索引 —</div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="land" data-i18n="cat_land">土地</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="mountain" data-i18n="tag_mountain">山</span>
+                            <span class="index-tag" data-tag="slope" data-i18n="tag_slope">坡</span>
+                            <span class="index-tag" data-tag="shore" data-i18n="tag_shore">岸</span>
+                            <span class="index-tag" data-tag="bay" data-i18n="tag_bay">湾</span>
+                            <span class="index-tag" data-tag="port" data-i18n="tag_port">埠</span>
+                            <span class="index-tag" data-tag="plateau" data-i18n="tag_plateau">塬</span>
+                            <span class="index-tag" data-tag="valley" data-i18n="tag_valley">谷</span>
+                            <span class="index-tag" data-tag="cliff" data-i18n="tag_cliff">崖</span>
+                        </div>
+                    </div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="architecture" data-i18n="cat_arch">建筑</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="corridor" data-i18n="tag_corridor">廊</span>
+                            <span class="index-tag" data-tag="room" data-i18n="tag_room">厅</span>
+                            <span class="index-tag" data-tag="dwelling" data-i18n="tag_dwelling">居</span>
+                            <span class="index-tag" data-tag="wall" data-i18n="tag_wall">垣</span>
+                            <span class="index-tag" data-tag="fort" data-i18n="tag_fort">堡</span>
+                            <span class="index-tag" data-tag="hall" data-i18n="tag_hall">殿</span>
+                            <span class="index-tag" data-tag="tower" data-i18n="tag_tower">塔</span>
+                            <span class="index-tag" data-tag="tunnel" data-i18n="tag_tunnel">甬</span>
+                            <span class="index-tag" data-tag="column" data-i18n="tag_column">柱</span>
+                            <span class="index-tag" data-tag="factory" data-i18n="tag_factory">厂</span>
+                            <span class="index-tag" data-tag="vessel" data-i18n="tag_vessel">舰</span>
+                            <span class="index-tag" data-tag="rail" data-i18n="tag_rail">辙</span>
+                            <span class="index-tag" data-tag="courtyard" data-i18n="tag_courtyard">庭</span>
+                            <span class="index-tag" data-tag="dam" data-i18n="tag_dam">坝</span>
+                            <span class="index-tag" data-tag="chamber" data-i18n="tag_chamber">室</span>
+                            <span class="index-tag" data-tag="monument" data-i18n="tag_monument">碑</span>
+                        </div>
+                    </div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="status" data-i18n="cat_status">状态</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="ruin" data-i18n="tag_ruin">残</span>
+                            <span class="index-tag" data-tag="remains" data-i18n="tag_remains">骸</span>
+                            <span class="index-tag" data-tag="desolate" data-i18n="tag_desolate">荒</span>
+                            <span class="index-tag" data-tag="sunken" data-i18n="tag_sunken">沉</span>
+                            <span class="index-tag" data-tag="scorched" data-i18n="tag_scorched">焦</span>
+                            <span class="index-tag" data-tag="crack" data-i18n="tag_crack">裂</span>
+                            <span class="index-tag" data-tag="eroded" data-i18n="tag_eroded">蚀</span>
+                            <span class="index-tag" data-tag="relocated" data-i18n="tag_relocated">迁</span>
+                            <span class="index-tag" data-tag="compressed" data-i18n="tag_compressed">压</span>
+                            <span class="index-tag" data-tag="seepage" data-i18n="tag_seepage">渗</span>
+                        </div>
+                    </div>
+
+                    <div class="index-row">
+                        <div class="index-category" data-tag="nature" data-i18n="cat_nature">自然</div>
+                        <div class="index-separator">|</div>
+                        <div class="index-tags-container">
+                            <span class="index-tag" data-tag="vine" data-i18n="tag_vine">蔓</span>
+                            <span class="index-tag" data-tag="moss" data-i18n="tag_moss">苔</span>
+                            <span class="index-tag" data-tag="tree" data-i18n="tag_tree">木</span>
+                            <span class="index-tag" data-tag="spike" data-i18n="tag_spike">棘</span>
+                            <span class="index-tag" data-tag="ash" data-i18n="tag_ash">灰</span>
+                            <span class="index-tag" data-tag="membrane" data-i18n="tag_membrane">膜</span>
+                            <span class="index-tag" data-tag="water" data-i18n="tag_water">水</span>
+                            <span class="index-tag" data-tag="wave" data-i18n="tag_wave">波</span>
+                            <span class="index-tag" data-tag="magnetic" data-i18n="tag_magnetic">磁</span>
+                            <span class="index-tag" data-tag="soil" data-i18n="tag_soil">土</span>
+                            <span class="index-tag" data-tag="sand" data-i18n="tag_sand">沙</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- I18n -->
+    <script>const languageVault = {
+            "en": {
+                        "document_title": "Ruin Atlas · Relic Archive",
+                        "top_title": "Ruin Atlas",
+                        "manual_card_view": "Card View",
+                        "manual_card_intro": "Pull the joystick toward the object in screen space. The object pivots around its center, allowing it to be inspected from every angle.",
+                        "manual_reset": "——Reset",
+                        "manual_joystick": "——Joystick",
+                        "manual_pan_up": "——Pan Up",
+                        "manual_pan_lr": "————Pan L/R",
+                        "manual_pan_down": "——Pan Down",
+                        "manual_zoom_in": "——Zoom In",
+                        "manual_zoom_out": "——Zoom Out",
+                        "manual_doc_view": "Document View",
+                        "manual_page_up": "——Previous Page",
+                        "manual_page_down": "——Next Page",
+                        "manual_item_prev": "——Previous Frame",
+                        "manual_item_next": "——Next Frame",
+                        "manual_img_view": "Image View",
+                        "manual_txt_view": "Text View",
+                        "manual_overlay_layer": "Analysis Overlay",
+                        "manual_calibrate": "Calibration: Hover over the indicator to lock it onto the graphic-score trajectory.",
+                        "manual_sync": "Sync: As the footage advances, the pointer indicates the corresponding score node in real time.",
+                        "score_header_graphic": "Graphic Score—————————",
+                        "score_header_sync": "—————————Sync Indicator",
+                        "video_play_pause": "Play/Pause",
+                        "video_score_sync": "Video-Score Sync",
+                        "video_play_pause_chapter": "Play/Pause/Chapter",
+                        "video_chapter_node": "Chapter Node",
+                        "map_init_hint": "Drag · Zoom to explore the Atlas",
+                        "compass_manual_title": "Compass Navigation Guide",
+                        "compass_out": " ‹( - Outside: Pointer extends toward the relic.",
+                        "compass_in": " ›( - Inside: Focus reverses toward the relic origin.",
+                        "compass_center": " ⨀ - Near Center: Coil contracts to lock the coordinates.",
+                        "main_title": "Folly Series",
+                        "coords_lat_lon": "Longitude◓ Latitude◑",
+                        "drawer_select_site": "Select a site",
+                        "bottom_trigger_record": "Relic Folio",
+                        "bottom_center_label": "Relic Archive",
+                        "archive_add": "[Add Record]",
+                        "bottom_trigger_ruin": "⁙ Folly Opus",
+                        "index_top_title": "“Ruin Atlas · Relic Archive” records man-made remnants, wastelands, and forgotten landscapes encountered while wandering the world, gradually assembling an ever-expanding world of ruins.",
+                        "index_p1": "Each relic preserves a fleeting picturesque beauty while already carrying the beginning of another collapse. These remnants become the ground from which “Folly” grows. Drawing on the garden folly and its aesthetic of deliberately staged ruin, each work condenses long processes of weathering, erosion, and collapse into a final act of self-destruction—something to be seen, heard, and experienced. ⁙",
+                        "index_p2": "“Folly” uses graphic scores and mechanical structures to turn each relic into an instrument played by time, nature, and the collapse written into its structure from the moment of construction. As order gradually loosens, architecture begins to perform its own disintegration through sound, vibration, and echo. Freed from their former functions, materials reveal their physical presence, while nature re-enters the rhythm of the space. ⁙",
+                        "index_conclusion": "Ultimately, every image, sound, and recovered object returns to the “Relic Archive,” becoming part of a continuously expanding record of ruins. Scattered across the map, these records occupy the same coordinates as landscapes that still appear prosperous and complete; together, they assemble the unfinished “Ruin Atlas.”",
+                        "index_title": "— Index —",
+                        "cat_land": "Land",
+                        "cat_arch": "Arch",
+                        "cat_status": "Status",
+                        "cat_nature": "Nature",
+                        "tag_mountain": "Mountain",
+                        "tag_slope": "Slope",
+                        "tag_shore": "Shore",
+                        "tag_bay": "Bay",
+                        "tag_port": "Port",
+                        "tag_plateau": "Plateau",
+                        "tag_valley": "Valley",
+                        "tag_cliff": "Cliff",
+                        "tag_corridor": "Corridor",
+                        "tag_room": "Room",
+                        "tag_dwelling": "Dwelling",
+                        "tag_wall": "Wall",
+                        "tag_fort": "Fort",
+                        "tag_hall": "Hall",
+                        "tag_tower": "Tower",
+                        "tag_tunnel": "Tunnel",
+                        "tag_column": "Column",
+                        "tag_factory": "Factory",
+                        "tag_vessel": "Vessel",
+                        "tag_rail": "Rail",
+                        "tag_courtyard": "Courtyard",
+                        "tag_dam": "Dam",
+                        "tag_chamber": "Chamber",
+                        "tag_monument": "Monument",
+                        "tag_ruin": "Ruin",
+                        "tag_remains": "Remains",
+                        "tag_desolate": "Desolate",
+                        "tag_sunken": "Sunken",
+                        "tag_scorched": "Scorched",
+                        "tag_crack": "Crack",
+                        "tag_eroded": "Eroded",
+                        "tag_relocated": "Relocated",
+                        "tag_compressed": "Compression",
+                        "tag_seepage": "Seepage",
+                        "tag_vine": "Vine",
+                        "tag_moss": "Moss",
+                        "tag_tree": "Tree",
+                        "tag_spike": "Spike",
+                        "tag_ash": "Ash",
+                        "tag_membrane": "Membrane",
+                        "tag_water": "Water",
+                        "tag_wave": "Wave",
+                        "tag_magnetic": "Magnetism",
+                        "tag_soil": "Soil",
+                        "tag_sand": "Sand",
+                        "specimen_visual": "Visual Specimen",
+                        "specimen_audio": "Audio Specimen",
+                        "specimen_object": "Object Specimen",
+                        "specimen_note": "Annotation Card",
+                        "title_radio_score": "Graphic Score | Scorched Aether",
+                        "title_radio_instrument": "Folly Instrument | Aether Rift",
+                        "title_radio_film": "Folly II | Scorched Aether Tower",
+                        "title_radio_rec": "Radio Road Scorched Earth | Relic Record",
+                        "desc_radio_score": "Aether resonance field graphic score.",
+                        "desc_radio_instrument": "Critical-acoustics experiment using a high-frequency circuit.",
+                        "desc_radio_film": "Electromagnetic scherzo performed through the relic structure.",
+                        "title_plague_score": "Graphic Score | Heart Reverberation",
+                        "title_plague_instrument": "Folly Instrument | Rusted Blood Heart",
+                        "title_plague_film": "Folly I | Sunken Deadwater Ventricle",
+                        "title_plague_rec": "Wenzhu Dam Sunken Ruin | Relic Record",
+                        "desc_plague_score": "Deadwater sedimentation graphic score.",
+                        "desc_plague_instrument": "Percussive acoustics experiment using a fragmented heart mechanism.",
+                        "desc_plague_film": "Reverberation performance of the collapsing sunken-ruin core.",
+                        "ui_pdf_loading": "Loading blueprint...",
+                        "ui_local_preview_hint": "Note: Local preview mode (file:///) does not support page-turning HUD. Please use Live Server for the full experience.",
+                        "ui_garden": "Folly Archive",
+                        "ui_record": "Relic Archive",
+                        "ui_creator": "Ruinwright: Qingyuan Luo",
+                        "ui_recorder": "Recorder: Qingyuan Luo",
+                        "ui_recorder_label": "Recorder: ",
+                        "ui_archive_date": "Archived: ",
+                        "ui_auto_nav": "Auto Nav ⌖",
+                        "ui_collapse_compass": "[ Collapse Compass ×]",
+                        "ui_compass_nav": "⊙ Compass Nav",
+                        "site_name_瘟猪坝沉墟": "Sunken Ventricle",
+                        "site_desc_瘟猪坝沉墟": "Water from the artificial reservoir continually seeps underground, following fissures into old foundations and karst cavities until a sunken ruin forms in the low ground. Wastewater and groundwater mingle here in a slow exchange, and the entire site has necrotized into a silent pool of black water—like an architectural wound that never forms a scab.",
+                        "site_name_电台路焦土": "Rusted Tower · Scorched Earth",
+                        "site_desc_电台路焦土": "Shortwave antennas and industrial remnants once formed an oscillating electromagnetic field. The factory has been leveled, yet the radio noise that once tore through the air at high speed seems to linger. The field has not vanished with the buildings; it has settled into the ground cut by guyed towers, the tension of rusted cables, and the spatial order of the scorched earth.",
+                        "site_name_山葬灰脉": "Ash Veins of the Mountain Burial",
+                        "site_desc_山葬灰脉": "In this long-abandoned cement plant, some buildings have already collapsed while the remaining shells wait for the next fall. Weathering, seepage, and gravity continue the slow rite of a mountain burial. Plants advance through brick joints and cracks, prying the factory apart inch by inch like sedimentary rock, until it is returned to the mountain.",
+                        "site_name_琉棘庭": "Courtyard of Glass Thorns",
+                        "site_desc_琉棘庭": "Among the remnants scattered across a vast wasteland, a walled patch of empty ground stands isolated. It has no house and no windows, only a narrow exit, as if it had been forgotten from the moment it was built. Shards of glass embedded along the wall were meant to prevent trespass; even as the wall weathers and fractures, they remain transparent and sharp, still guarding a place no one comes to.",
+                        "site_name_裂翼坪": "Field of the Broken Wing",
+                        "site_desc_裂翼坪": "After the airport in the lake was decommissioned, the runway was broken apart and the ground returned to grassland. The roar of engines has long disappeared, leaving fragments of runway scattered along the edges. In one of the cracks, a tree shaped like a single wing grows around a piece of tarmac, as if preserving the last wing of a landscape that can no longer take flight.",
+                        "site_name_轨畔孤构": "Solitary Structure by the Tracks",
+                        "site_desc_轨畔孤构": "This was once a repair depot for steam locomotives. The workshops have vanished, but the railway still sends trains into the distance. The concrete structure left behind has gradually become an unvisited industrial mound beside the tracks.",
+                        "site_name_残柱林": "Forest of Broken Columns",
+                        "site_desc_残柱林": "These trees began as saplings left by an urban plan nearly a century ago. Decades later, a massive tree split under its own weight and its limbs tore through the roof of a stone-columned building. The collapse was not sudden; it had been accumulating since the day the sapling took root. Only when the roof was broken open did it become clear that the thing truly forgotten may have been the tree that never stopped growing.",
+                        "site_name_池骸湾": "Tidal Bathhouse Ruin",
+                        "site_desc_池骸湾": "Engineering once drew seawater into the building and domesticated the sea as a bathhouse. Now the sea is taking the structure back, and the building follows the tide rather than its former users. Water continues to erode the pool walls and foundations as rubble and algae spread across the basin. The sea did not simply flood the building; it let the shoreline grow back inside it.",
+                        "site_name_褶层湾": "Folded-Strata Bay",
+                        "site_desc_褶层湾": "Tens of thousands of years ago, glaciers left layers of gravel; over the last century, mining, railways, and industry repeatedly carved over the same ground. As each function disappeared, rows of diamond-shaped concrete structures remained exposed in the landscape, like a section cut through the strata of civilization.",
+                        "site_name_釉骸拓壁": "Imprinted Membrane",
+                        "site_desc_釉骸拓壁": "Industrial plastic sheeting clings tightly to the surviving wall, reproducing even the cracks in the tiles and the relief of the surface. It does not repair the ruin. Instead, before demolition, it preserves one final impression of the building’s complete form—an imprinting membrane laid over the relic.",
+                        "site_name_叠骸构阵": "Matrix of Stacked Remains",
+                        "site_desc_叠骸构阵": "The factory unfolds across a hillside, where shifting ground levels, staggered floors, intersecting frames, and divergent orientations weave a complex spatial system. While the factory operated, walls, functions, and signs maintained that order and concealed how difficult its structure was to read. Only after the surfaces peeled away and the slabs collapsed—leaving intersecting frames and shadows—did the labyrinth that had always been embedded within it finally emerge.",
+                        "site_name_苔网塬": "Moss-Net Plateau",
+                        "site_desc_苔网塬": "A vast sheet of green construction mesh covers the architectural debris like an industrial moss spreading across the ruin. Concrete fragments prop up the net while trees rise through rebar and rubble, slowly lifting it into a gently undulating surface. A material once used to conceal ruins has, through long weathering, begun to catch soil and nurture plants, becoming the first layer of life after the building disappears.",
+                        "site_name_陆坞舰骸": "Landlocked Carrier Remains",
+                        "site_desc_陆坞舰骸": "In what may be one of the places farthest from the sea, an aircraft carrier stands in the middle of a pond. It never sailed and never truly docked; it merely sustained an image of the ocean. As the pond dried and the metal skin was stripped away, the carrier revealed its concrete-and-rebar body. The maritime illusion peeled away layer by layer, leaving a concrete relic at the center of the empty basin.",
+                        "site_name_墟响厅": "Hall of Ruin Echoes",
+                        "site_desc_墟响厅": "A heavy roof, exaggerated colonnades, and sloping walls form a building made for display. Inside, the geometry produces an excess of leftover space. Glass cases remain embedded in the slanted walls, but their contents are long gone. The mirrored surfaces now reflect one another, leaving the building to exhibit its own empty shell.",
+                        "site_name_波蚀脊堤": "Wave-Eroded Ridge",
+                        "site_desc_波蚀脊堤": "The wave-like unfinished building has been reduced to a concrete skeleton exposed to the sea wind. Air passes through its stacked voids and draws a low, bone-like hum from the structure. Along the coast, the tetrapods wear themselves away by resisting the waves, while the building erodes because the purpose of its construction has vanished. Both move toward destruction: one consumed by its task, the other weathered by the loss of one. The absurdity is that the tetrapods still spend themselves protecting a building that no longer has a reason to exist.",
+                        "site_name_曜原驿": "Station of the Solar Plain",
+                        "site_desc_曜原驿": "About 300 hectares of photovoltaic panels cover the former ground like another kind of field, one cultivated to harvest sunlight. A rest stop once serving the road has been left within it, without a road and without travelers, while solar panels extend toward the horizon. It no longer waits for anyone; it simply shares this new landscape with the sun that rises over it each day.",
+                        "site_name_溶境遗廊": "Drowned Subterranean Arcade",
+                        "site_desc_溶境遗廊": "After years of abandonment, the underground shopping arcade and tunnel have been steadily eroded by rainwater and subterranean seepage. Mannequins, mirrors, and displays remain inside sealed shops in place of the crowds that disappeared, while cracks, mold, and rust continue to overwrite them. Mermaid sculptures and marine murals still preserve the illusion of an artificial ocean overhead; as groundwater keeps entering, that illusion is gradually occupied by real water.",
+                        "site_name_荒娱敖包": "Arcade Ovoo",
+                        "site_desc_荒娱敖包": "In this cold wasteland, where leaving is difficult, one might expect a beacon to offer a map, a telephone, or some other means of reaching the outside world. Instead, what remains is a heap of arcade cabinets. Stacked into an electronic ovoo, they resemble a gift delivered to the wrong place—or a wish made incorrectly—leaving behind an object that is at once useless, absurd, and strangely desperate.",
+                        "site_name_彩壳堡": "Chromatic Husk Castle",
+                        "site_desc_彩壳堡": "An unfinished castle rises from the farmland. Concrete and reinforcing steel remain exposed, while the outer walls are already covered in vivid color. The fairy tale was completed before the building itself—and abandoned before it as well.",
+                        "site_name_削岩残居": "Rock-Cut Remnant Dwellings",
+                        "site_desc_削岩残居": "The mountain has been quarried into successive terraces. Houses scattered across the steps resemble crops after harvest, with only broken walls remaining between layers of exposed rock. Long after the ore was removed, the dwellings remain in place, weathering slowly together with the stripped mountain.",
+                        "site_name_迁痕空埠": "Vacant Quay of Migration Traces",
+                        "site_desc_迁痕空埠": "The old riverside wharf gradually withdrew from the city, while markings such as “demolish” and “unsigned” recorded the process of relocation. After the demolition, traces of daily life remained: potted plants rooted in cracks, cables still tugged at fallen wall panels, and chairs and warning signs stayed suspended in routines that no longer had people in them. After the residents left, debris, plants, and habits of living continued to hold the shoreline together.",
+                        "site_name_山骸窟殿": "Temple of the Phosphate",
+                        "site_desc_山骸窟殿": "Built along the mountainside, this phosphate plant became known as the “Little Potala Palace” for its stacked massing and monumental scale. From a distance it resembles a palace rising from the mountain; up close, conveyors and factory sheds reveal its industrial function. Sacred form and industrial purpose overlap here, leaving the mountain with a palace built for ore and abandoned with it.",
+                        "site_name_土还灶垣": "Hearth Wall Returning to Earth",
+                        "site_desc_土还灶垣": "This rammed-earth wall is said to have once belonged to a monastery kitchen. Year after year, wind and rain pare away the compacted layers, softening the edges and exposing soil and rubble again. Built up layer by layer from mountain earth, the wall now sheds itself layer by layer back into the ground. From a distance, it is increasingly difficult to tell whether the architecture is disappearing or the mountain is taking it back.",
+                        "site_name_崖隐蚀垣": "Eroded Wall of the Cliff Hermitage",
+                        "site_desc_崖隐蚀垣": "This rammed-earth ruin hangs high on the cliff. According to local accounts, it is roughly three to four centuries old and once served as a place where senior monks lived and entered secluded practice. Farther along the slope stood a monastery that has since been razed, and the surrounding area is said to have contained many spaces used for retreat. Rows of holes in the wall still mark where timber beams once entered the structure. The timber has long decayed, leaving the heavy earthen wall embedded at the mountain’s edge, hollowed by wind and rain along beam sockets and cracks like a site of practice still held by the land.",
+                        "site_name_暮辉骸殿": "Palace of the Afterglow",
+                        "site_desc_暮辉骸殿": "This unfinished megastructure stands beside the railway. Curtain walls and finishes were never installed, leaving columns, floor slabs, and the structural core exposed for years; in the evening light, they form an unusually complete concrete skeleton. Slender column grids, broad floors, repeated structural rhythms, and deep perspective give it the solemn presence of a monumental sculpture before it ever became a functioning building. It never passed from prosperity into decline; it was abandoned before completion. A splendor that was never realized survives only as an outline held by the structure itself. The railway has become its only continuously operating auditorium, and every act of looking takes place through a window moving too quickly to stop.",
+                        "site_name_褶脊胚庭": "Embryonic Courtyard of the Fold Ridge",
+                        "site_desc_褶脊胚庭": "An unfinished symmetrical concrete structure rises from a retaining wall of irregular stone. Its two wings are linked by a central bridge, but the connection does not remain flat: it bulges outward, as though two still-soft concrete bodies were pressing against one another, wrinkling and lifting the bridge caught between them. Seen from below at an angle, the protrusion is difficult to read—is it rising upward, or swelling outward from the face of the building? The compression seems to continue into the courtyard below. Trees and weeds grow denser in the narrowing space than in the surrounding landscaping, as if the closing walls had pushed vegetation together like a fluid into an artificial valley.",
+                        "ui_seq_1": "I",
+                        "ui_seq_2": "II",
+                        "ui_seq_3": "III",
+                        "ui_seq_4": "IV",
+                        "ui_seq_5": "V",
+                        "ui_seq_6": "VI",
+                        "ui_seq_7": "VII",
+                        "ui_seq_8": "VIII",
+                        "ui_seq_9": "IX",
+                        "ui_seq_10": "X",
+                        "ui_garden_archive": "Folly Archive",
+                        "ui_record_archive": "Relic Archive",
+                        "ui_img_files": "Image Files",
+                        "ui_map_files": "Mapping Files",
+                        "ui_txt_files": "Text Files",
+                        "ui_graphic_score": "Graphic Score",
+                        "ui_instrument_demo": "Instrument Demo",
+                        "ui_ruin_theater": "Folly Theater",
+                        "ch1_0": "Prologue: Stagnant Shell",
+                        "ch1_1": "Phase I: Remnant",
+                        "ch1_2": "Phase II: Corrosion",
+                        "ch1_3": "Phase III: Attrition",
+                        "ch1_4": "Phase IV: Void Brace",
+                        "ch1_5": "Epilogue: Reverberation",
+                        "ch2_0": "Prologue: Interstice",
+                        "ch2_1": "Phase I: Dissonance",
+                        "ch2_2": "Phase II: Tremor",
+                        "ch2_3": "Phase III: Aeolian Static",
+                        "ch2_4": "Phase IV: Resonance",
+                        "ch2_5": "Phase V: Residual Hum",
+                        "ch2_6": "Epilogue: Null Foundation",
+                        "nav_prefix": "Navigating to: ",
+                        "nav_dir_opening": "Opening archive directory..."
+            },
+            "ja": {
+                        "document_title": "墟域図 · 遺構館",
+                        "top_title": "墟域図",
+                        "manual_card_view": "カード表示",
+                        "manual_card_intro": "ジョイスティックを対象物の方向へ引くと、オブジェクトが中心点を軸に回転し、あらゆる角度から観察できます。",
+                        "manual_reset": "——リセット",
+                        "manual_joystick": "——ジョイスティック",
+                        "manual_pan_up": "——上へ移動",
+                        "manual_pan_lr": "————左右へ移動",
+                        "manual_pan_down": "——下へ移動",
+                        "manual_item_prev": "——前のフレーム",
+                        "manual_item_next": "——次のフレーム",
+                        "manual_zoom_in": "——拡大",
+                        "manual_zoom_out": "——縮小",
+                        "manual_doc_view": "ドキュメント閲覧",
+                        "manual_page_up": "——前のページ",
+                        "manual_page_down": "——次のページ",
+                        "manual_img_view": "画像閲覧",
+                        "manual_txt_view": "テキスト閲覧",
+                        "manual_overlay_layer": "解析オーバーレイ",
+                        "manual_calibrate": "キャリブレーション：インジケーターにカーソルを合わせ、図形楽譜の軌跡へロックします。",
+                        "manual_sync": "同期：映像の進行に合わせ、ポインターが対応する楽譜上のノードをリアルタイムで示します。",
+                        "score_header_graphic": "図形楽譜—————————",
+                        "score_header_sync": "—————————同期インジケーター",
+                        "video_play_pause": "再生 / 一時停止",
+                        "video_score_sync": "映像・楽譜同期",
+                        "video_play_pause_chapter": "再生 / 一時停止 / チャプター",
+                        "video_chapter_node": "チャプターノード",
+                        "map_init_hint": "ドラッグ・ズームで墟域図を巡る",
+                        "compass_manual_title": "コンパス・ナビゲーション",
+                        "compass_out": " ‹( - 圏外：ポインターが遺構の方向を示します。",
+                        "compass_in": " ›( - 圏内：遺構の原点へフォーカスを反転します。",
+                        "compass_center": " ⨀ - 中心付近：コイルが収束し、座標を特定します。",
+                        "main_title": "廃墟園林シリーズ",
+                        "coords_lat_lon": "経度◓ 緯度◑",
+                        "drawer_select_site": "地点を選択",
+                        "bottom_trigger_record": "遺構録・巻",
+                        "bottom_center_label": "遺構館",
+                        "archive_add": "[アーカイブ追加]",
+                        "bottom_trigger_ruin": "⁙ 廃墟園林・編",
+                        "index_top_title": "『墟域図・遺構館』は、世界を彷徨うなかで出会った人工の残構、荒地、そして忘れられた風景を記録し、少しずつ拡張し続ける廃墟の世界を一枚の『墟域図（きょいきず）』として描いている。",
+                        "index_p1": "一つひとつの遺構は、束の間の「ピクチャレスク（絵画的な美）」をとどめながら、すでに次の崩壊の始まりを孕んでいる。それらの残構は『廃墟園林』の土壌となる。庭園のフォリーに見られる「意図的につくられた廃墟」の美学を手がかりに、長い風化、侵食、崩壊の時間を、見ること・聴くこと・体験することのできる一つの「自壊の終章」へと凝縮する。⁙",
+                        "index_p2": "『廃墟園林』では、図形楽譜と機械構造によって、各遺構を、時間と自然、そして建設の時点から構造に書き込まれていた崩壊そのものが奏でる楽器へと変えていく。秩序が少しずつほどけるにつれ、建築は音、振動、反響によって自らの崩壊を演奏し始める。役割を失った素材は物質そのものの姿を現し、自然は再び空間のリズムへ入り込んでいく。⁙",
+                        "index_conclusion": "やがて、すべての映像、音、採集物は『遺構館』へと戻り、更新され続ける廃墟のアーカイブとなる。地図上に散在するそれらは、今なお繁栄し、完成しているように見える人工景観と同じ座標を占めている。そうした記録が重なり合いながら、未完の『墟域図』を少しずつ形づくっていく。",
+                        "index_title": "— 索引 —",
+                        "cat_land": "土地",
+                        "cat_arch": "建築",
+                        "cat_status": "状態",
+                        "cat_nature": "自然",
+                        "tag_mountain": "山",
+                        "tag_slope": "斜",
+                        "tag_shore": "岸",
+                        "tag_bay": "湾",
+                        "tag_port": "埠",
+                        "tag_plateau": "台地",
+                        "tag_valley": "谷",
+                        "tag_cliff": "崖",
+                        "tag_corridor": "廊",
+                        "tag_room": "室",
+                        "tag_dwelling": "居",
+                        "tag_wall": "垣",
+                        "tag_fort": "砦",
+                        "tag_hall": "殿",
+                        "tag_tower": "塔",
+                        "tag_tunnel": "隧",
+                        "tag_column": "柱",
+                        "tag_factory": "工場",
+                        "tag_vessel": "艦",
+                        "tag_rail": "軌",
+                        "tag_courtyard": "庭",
+                        "tag_dam": "堰",
+                        "tag_chamber": "房",
+                        "tag_monument": "碑",
+                        "tag_ruin": "残",
+                        "tag_remains": "骸",
+                        "tag_desolate": "荒",
+                        "tag_sunken": "沈",
+                        "tag_scorched": "焦",
+                        "tag_crack": "裂",
+                        "tag_eroded": "蝕",
+                        "tag_relocated": "遷",
+                        "tag_compressed": "圧",
+                        "tag_seepage": "浸",
+                        "tag_vine": "蔓",
+                        "tag_moss": "苔",
+                        "tag_tree": "木",
+                        "tag_spike": "棘",
+                        "tag_ash": "灰",
+                        "tag_membrane": "膜",
+                        "tag_water": "水",
+                        "tag_wave": "波",
+                        "tag_magnetic": "磁",
+                        "tag_soil": "土",
+                        "tag_sand": "沙",
+                        "specimen_visual": "視覚標本",
+                        "specimen_audio": "音響標本",
+                        "specimen_object": "実物標本",
+                        "specimen_note": "注釈カード",
+                        "title_radio_score": "図形楽譜 | 焦土のエーテル",
+                        "title_radio_instrument": "廃墟楽器 | エーテルの狭間",
+                        "title_radio_film": "廃墟園林・其の二 | 焦土エーテル鉄塔",
+                        "title_radio_rec": "電台路の焦土 | 遺構録",
+                        "desc_radio_score": "エーテル共鳴場の図形楽譜。",
+                        "desc_radio_instrument": "高周波回路の臨界音響実験。",
+                        "desc_radio_film": "残構による電磁スケルツォ演奏。",
+                        "title_plague_score": "図形楽譜 | 心臓の残響",
+                        "title_plague_instrument": "廃墟楽器 | 錆血の心臓",
+                        "title_plague_film": "廃墟園林・其の一 | 沈墟の死水心室",
+                        "title_plague_rec": "瘟猪壩の沈墟 | 遺構録",
+                        "desc_plague_score": "死水堆積の図形楽譜。",
+                        "desc_plague_instrument": "断片心臓の打撃音響実験。",
+                        "desc_plague_film": "沈墟コア崩壊の反響演奏。",
+                        "ui_pdf_loading": "図面を読み込み中...",
+                        "ui_local_preview_hint": "ローカルプレビュー（file:///）ではページ送りHUDが使用できません。完全な動作を確認するには Live Server を使用してください。",
+                        "ui_garden": "廃墟園林",
+                        "ui_record": "遺構録",
+                        "ui_creator": "墟構師：羅清源",
+                        "ui_recorder": "記録者：羅清源",
+                        "ui_recorder_label": "記録者：",
+                        "ui_archive_date": "アーカイブ：",
+                        "ui_auto_nav": "自動ナビ ⌖",
+                        "ui_collapse_compass": "[ コンパスを閉じる ×]",
+                        "ui_compass_nav": "⊙ コンパスナビ",
+                        "site_name_瘟猪坝沉墟": "沈墟の心室",
+                        "site_desc_瘟猪坝沉墟": "人工湖の水は絶え間なく地下へ浸み込み、亀裂に沿って古い基礎や鍾乳洞へ流れ込み、低地に一帯の「沈墟」を生み出した。汚水と地下水はここでゆっくりと混ざり合い、遺構全体はやがて、沈黙した黒い水溜まりへと壊死していく。それは、いつまでもかさぶたを結ばない建築の傷口のようである。",
+                        "site_name_电台路焦土": "朽塔の焦土",
+                        "site_desc_电台路焦土": "短波アンテナと工業遺構は、かつて一つの振動する電磁場を形づくっていた。工場が更地となった今も、かつて高速で空気を切り裂いていた無線ノイズが、なおこの場所に残っているように感じられる。場は建築とともに消えたのではなく、支線で支えられた鉄塔が刻んだ地面、錆びた鋼索の張力、そして焦土の空間秩序のなかへ沈殿している。",
+                        "site_name_山葬灰脉": "山葬の灰脈",
+                        "site_desc_山葬灰脉": "長く放置された旧セメント工場では、すでに崩れた建物のかたわらで、残った躯体が次の崩壊を待っている。風化、浸水、重力が、この長い「山葬」をゆっくりと進めている。植物はレンガの目地や亀裂に沿って育ち、堆積岩をこじ開けるように工場を少しずつ解体し、やがて山へと還していく。",
+                        "site_name_琉棘庭": "瑠璃棘の庭",
+                        "site_desc_琉棘庭": "広大な荒地の残構のあいだに、塀で囲われた空地が孤立している。建物も窓もなく、残されているのは狭い出口だけで、まるで完成した瞬間から忘れられていたかのようだ。侵入を防ぐため塀の上に埋め込まれたガラス片は、壁が風化し崩れつつある今も透明で鋭く、誰も訪れない空地を守り続けている。",
+                        "site_name_裂翼坪": "裂翼の原",
+                        "site_desc_裂翼坪": "湖中の空港が運用を終えると、滑走路は砕かれ、土地は再び草原の姿へ戻っていった。エンジンの轟音はとうに消え、周縁には滑走路の破片だけが散らばっている。亀裂のあいだでは、片翼のような形をした一本の木が滑走路の断片を抱え込むように育ち、二度と飛び立てないこの土地に最後の翼を残している。",
+                        "site_name_轨畔孤构": "線路脇の孤構",
+                        "site_desc_轨畔孤构": "ここはかつて蒸気機関車の整備工場だった。工場が姿を消した後も、線路は列車を遠方へ送り続けている。その場に残されたコンクリートの遺構だけが、いつしか線路脇の誰も訪れない工業の小丘となった。",
+                        "site_name_残柱林": "残柱の森",
+                        "site_desc_残柱林": "この木々は、ほぼ一世紀前の都市計画のなかで残された苗木から育った。数十年後、巨木は自らの重みに耐えきれず折れ、その枝が石柱建築の屋根を引き裂いた。この崩壊は偶然ではない。苗木が根を下ろした日から、長い時間をかけて蓄積されてきたものだった。屋根が木に割られたとき、真に忘れられていたのは、ずっと成長を続けていたその木のほうだったのかもしれない。",
+                        "site_name_池骸湾": "潮に還る廃浴場",
+                        "site_desc_池骸湾": "人はかつて大規模な土木によって海水を建物へ引き込み、海を一つの浴場として飼い慣らした。いま海は建築を再び自らの内側へ取り戻し、建物は人ではなく潮の満ち引きに従い始めている。潮は池壁と基礎を侵食し、瓦礫と藻が底を覆っていく。海が建物を沈めたのではない。海岸線がもう一度、建物の中へ伸びてきただけなのだ。",
+                        "site_name_褶层湾": "褶曲層の湾",
+                        "site_desc_褶层湾": "数万年前に氷河が砂礫の層を残し、その後の百年間、人は採鉱、鉄道、工業によって同じ土地を何度も刻み直した。機能が一つずつ失われた後も、菱形のコンクリート構造物だけが列をなして風景の中に露出している。それは、文明が地層のあいだに残した一枚の断面のように見える。",
+                        "site_name_釉骸拓壁": "遺骸を写す膜",
+                        "site_desc_釉骸拓壁": "工事用のプラスチックシートが残壁に密着し、タイルのひびや壁面の凹凸までそのまま写し取っている。それは廃墟を修復するものではない。解体される前の建築から、最後に一度だけ完全な形を残すための、遺構の表面を覆う転写膜である。",
+                        "site_name_叠骸构阵": "重なる骸の構陣",
+                        "site_desc_叠骸构阵": "工場は丘陵に沿って広がり、起伏する地形、段差のある床、交差するフレーム、ばらばらの向きが複雑な空間を編み上げている。稼働していた頃は、壁、用途、案内表示がその秩序を保ち、同時に構造の読みにくさを覆い隠していた。壁面が剥がれ、床が崩れ、交差する骨格と影だけが残ったとき、そこに潜んでいた迷宮がようやく姿を現した。",
+                        "site_name_苔网塬": "苔網の台地",
+                        "site_desc_苔网塬": "巨大な緑色の工事用ネットが建築の残骸を覆い、産業遺構の上に広がる人工の苔のように見える。コンクリート片が網を持ち上げ、鉄筋や瓦礫のあいだから伸びた木々がさらに押し上げることで、地表はゆるやかに波打っている。もとは廃墟を覆い隠すための資材だったものが、長い風化のなかで土を受け止め、植物を育て、建築が消えた後の最初の生命層になっていく。",
+                        "site_name_陆坞舰骸": "陸に座礁した艦骸",
+                        "site_desc_陆坞舰骸": "海から最も遠い場所の一つとも思える内陸に、一隻の航空母艦が立っている。航行したことも、本当に停泊したこともなく、池の中央で海のイメージだけをつなぎ止めてきた。池が干上がり、金属の外皮が剥がされていくと、空母はコンクリートと鉄筋の本体を現した。海の幻影は層ごとに剥がれ、最後には池の中央にコンクリートの遺構だけが残った。",
+                        "site_name_墟响厅": "墟響の間",
+                        "site_desc_墟响厅": "重い屋根、誇張された列柱、傾いた壁面が、展示のために設計された建築を形づくっている。内部には、外形のために生まれた余剰空間が数多く残る。斜壁にはガラスの展示ケースが埋め込まれたままだが、中身はすでに空だ。鏡面だけが互いを映し続け、建築は自らの空洞を展示する空間になっている。",
+                        "site_name_波蚀脊堤": "波蝕の脊堤",
+                        "site_desc_波蚀脊堤": "波のように起伏する未完建築は、コンクリートの骨格だけを海風にさらしている。風が幾層もの空洞を抜けるたび、建物全体が骨のような低い音を鳴らす。海岸の消波ブロックは波を防ぐために自らをすり減らし、この建築は建てる目的を失ったまま、塩気と風のなかで風化し続ける。一方は使命のために消耗し、もう一方は使命を失ったために朽ちていく。もっとも不条理なのは、消波ブロックが今も、存在理由を失った建物を守るために自らを削り続けていることだ。",
+                        "site_name_曜原驿": "曜原の駅",
+                        "site_desc_曜原驿": "約300ヘクタールの太陽光パネルが元の土地を覆い、光を収穫する別種の農地のように広がっている。かつて道路利用者のためにあった休憩所はその中に取り残され、道も旅人も失った。地平線まで続くパネルの海のなかで、もはや誰かを待つこともなく、毎日昇る太陽とともに新しい風景を形づくっている。",
+                        "site_name_溶境遗廊": "溶境の遺廊",
+                        "site_desc_溶境遗廊": "地下商店街とトンネルは、長い放置の後、雨水と地下からの浸透水によって少しずつ侵食されている。閉ざされた店舗にはマネキン、鏡、陳列物が残り、消えた人々の代わりをするように立ち続け、その上を亀裂、カビ、錆が更新していく。天井の人魚像と海の壁画は人工の海の幻影を保っているが、地下水が流れ込み続けるにつれ、その幻影は本物の水に占められていく。",
+                        "site_name_荒娱敖包": "荒野の遊戯オボー",
+                        "site_desc_荒娱敖包": "抜け出しにくい冬の荒野で、人は地図や電話、外の世界とつながるための何かを信標に期待するかもしれない。ところが残されていたのは、積み上げられたゲーム筐体だった。それらは電子のオボーのように重なり、届け先を間違えた贈り物、あるいは願い方を間違えた祈りのように、何もない場所へひどく無用で、同時に絶望的なほど奇妙な存在を残している。",
+                        "site_name_彩壳堡": "彩殻の城",
+                        "site_desc_彩壳堡": "農地の中に、未完成の城が立っている。コンクリートと鉄筋はむき出しのままなのに、外壁にはすでに鮮やかな色彩が塗られている。童話の世界は建築より先に完成し、そして建築より先に廃墟になった。",
+                        "site_name_削岩残居": "削岩の残居",
+                        "site_desc_削岩残居": "山全体が段々状に採掘され、その斜面に散らばる家々は、収穫を終えた畑に残された作物のように見える。鉱石が運び去られた後も、崩れた壁は岩層のあいだに残り、露出した山肌と同じ時間のなかでゆっくりと風化している。",
+                        "site_name_迁痕空埠": "遷痕の空埠",
+                        "site_desc_迁痕空埠": "川沿いの旧埠頭は少しずつ都市から姿を消し、「拆」や「未签字」といった文字が移転の過程を記録している。解体後も生活の痕跡は残った。鉢植えは亀裂に根を張り、ケーブルは落ちた壁板を引き留め、高い場所の椅子や「貴重品にご注意ください」という表示は、人のいない日常の中にそのまま取り残されている。人が去った後も、残骸、植物、暮らしの痕跡がこの岸辺を支え続けている。",
+                        "site_name_山骸窟殿": "山骸の窟殿",
+                        "site_desc_山骸窟殿": "山肌に沿って建てられたこのリン鉱石工場は、幾層にも重なる巨大な量塊から「小ポタラ宮」と呼ばれていた。遠くから見ると山中の宮殿のようだが、近づけば目に入るのはコンベアと工場棟である。神聖さを思わせる形と工業の機能が重なり合い、山には、鉱石のために建てられ、鉱石とともに捨てられた一つの殿堂が残された。",
+                        "site_name_土还灶垣": "土へ還る竈垣",
+                        "site_desc_土还灶垣": "この版築の残壁は、かつて寺院の厨房だったと伝えられている。風雨は年ごとに版築の層を削り、角を丸め、土と砕石を再び露出させていく。山の土を一層ずつ突き固めて築かれた壁は、いま一層ずつ剥がれ落ち、再び大地へ還っている。遠くから見ると、建築が消えつつあるのか、それとも山がゆっくりと取り戻しているのか、次第に見分けがつかなくなる。",
+                        "site_name_崖隐蚀垣": "崖隠れの蝕垣",
+                        "site_desc_崖隐蚀垣": "この版築の残構は、崖の高所に張り付くように残っている。現地の話では、およそ三、四百年前のもので、かつて高僧が暮らし、閉じこもって修行するための場所だったという。斜面をさらに進むと寺院があったが、現在はすでに更地となっている。この一帯には、かつて修行のための籠もり場が数多く点在していたとも伝えられる。壁面に並ぶ穴には、木の梁が差し込まれていた痕跡が残る。木造部分はとうに朽ち、厚い土壁だけが山の縁に残され、風雨が梁の穴と亀裂に沿って少しずつ内部をえぐっている。それは今も山に抱えられた修行の遺構のように見える。",
+                        "site_name_暮辉骸殿": "残照の骸殿",
+                        "site_desc_暮辉骸殿": "この未完の巨大建築は線路のすぐ脇に立っている。カーテンウォールも仕上げも施されないまま、柱、床スラブ、コア構造だけが長く露出し、夕日のなかで奇妙なほど整ったコンクリートの骨格を形づくる。細い柱のグリッド、広い床面、反復する構造のリズムと奥行きは、建築として使われる前から、巨大な彫刻のような荘厳さを与えている。繁栄から衰退へ向かったのではなく、完成する前に放棄されたのだ。実現しなかった輝きは、構造だけによって今も輪郭を保っている。鉄道はこの遺構に残された唯一の観客席となり、すべての視線は、止まることのできない車窓から一瞬だけ向けられる。",
+                        "site_name_褶脊胚庭": "褶脊の胚庭",
+                        "site_desc_褶脊胚庭": "不規則な石を積んだ石垣の上に、左右対称の未完コンクリート建築が築かれている。両翼は中央の渡り廊下でつながるが、その接合部は平坦なままではなく、外へ押し出されたように膨らんでいる。まるでまだ硬化していない二つのコンクリートの胚が互いを押し合い、間に挟まれた廊下まで皺寄せして持ち上げたかのようだ。斜め下から見上げると、その突起が上へ隆起しているのか、建物の正面から外へ膨らんでいるのか判別しにくい。圧縮は両翼のあいだの庭にも及んでいるように見える。狭められた空間では、木々と雑草が周囲より濃く繁り、左右の壁が植生を流体のように押し集め、この人工の谷へ流し込んだかのようである。",
+                        "ui_seq_1": "其の一",
+                        "ui_seq_2": "其の二",
+                        "ui_seq_3": "其の三",
+                        "ui_seq_4": "其の四",
+                        "ui_seq_5": "其の五",
+                        "ui_seq_6": "其の六",
+                        "ui_seq_7": "其の七",
+                        "ui_seq_8": "其の八",
+                        "ui_seq_9": "其の九",
+                        "ui_seq_10": "其の十",
+                        "ui_garden_archive": "廃墟園林アーカイブ",
+                        "ui_record_archive": "遺構録",
+                        "ui_img_files": "画像ファイル",
+                        "ui_map_files": "マッピング資料",
+                        "ui_txt_files": "テキストファイル",
+                        "ui_graphic_score": "図形楽譜",
+                        "ui_instrument_demo": "楽器デモ",
+                        "ui_ruin_theater": "廃墟劇場",
+                        "ch1_0": "序章：滞殻",
+                        "ch1_1": "フェーズ I：残存",
+                        "ch1_2": "フェーズ II：枯蝕",
+                        "ch1_3": "フェーズ III：摩耗",
+                        "ch1_4": "フェーズ IV：空支",
+                        "ch1_5": "終章：残響",
+                        "ch2_0": "序章：狭間",
+                        "ch2_1": "フェーズ I：不協和",
+                        "ch2_2": "フェーズ II：震顫",
+                        "ch2_3": "フェーズ III：風雑音",
+                        "ch2_4": "フェーズ IV：共振",
+                        "ch2_5": "フェーズ V：残留ハム",
+                        "ch2_6": "終章：虚基",
+                        "nav_prefix": "ナビゲーション中：",
+                        "nav_dir_opening": "アーカイブ・ディレクトリを展開中..."
+            },
+            "zh": {
+                        "document_title": "墟域图 · 遗构馆",
+                        "top_title": "墟域图",
+                        "manual_card_view": "卡片检视",
+                        "manual_card_intro": "向目标物体移动的空间方向拉动摇杆，物体由中心原点翻转，获得全角度检视。",
+                        "manual_reset": "——重置",
+                        "manual_joystick": "——摇杆",
+                        "manual_pan_up": "——上平移",
+                        "manual_pan_lr": "————左右平移",
+                        "manual_pan_down": "——下平移",
+                        "manual_zoom_in": "——放大",
+                        "manual_zoom_out": "——缩小",
+                        "manual_doc_view": "文档阅览",
+                        "manual_page_up": "——上翻页",
+                        "manual_page_down": "——下翻页",
+                        "manual_item_prev": "——上一帧",
+                        "manual_item_next": "——下一帧",
+                        "manual_img_view": "图像检视",
+                        "manual_txt_view": "文本阅览",
+                        "manual_overlay_layer": "叠合解析层",
+                        "manual_calibrate": "校准：滑鼠悬停指示器，锁定于图形记谱轨迹。",
+                        "manual_sync": "同步：指针随影像进程，即时指向当前对应的的音符。",
+                        "score_header_graphic": "图形记谱—————————",
+                        "score_header_sync": "—————————同步指示器",
+                        "video_play_pause": "播放/暂停",
+                        "video_score_sync": "视频-乐谱同步",
+                        "video_play_pause_chapter": "播放/暂停/章节",
+                        "video_chapter_node": "章节节点",
+                        "map_init_hint": "拖曳 · 缩放以检视墟域图",
+                        "compass_manual_title": "罗盘导航指南",
+                        "compass_out": " ‹( - 圈外：指针外展指向遗构。",
+                        "compass_in": " ›( - 圈内：逆转聚焦遗构原点。",
+                        "compass_center": " ⨀ - 临中：线圈向内收缩定位。",
+                        "main_title": "废墟园林系列",
+                        "coords_lat_lon": "经度◓ 纬度◑",
+                        "drawer_select_site": "选择一个站点",
+                        "bottom_trigger_record": "遗构录・卷",
+                        "bottom_center_label": "遗构馆",
+                        "archive_add": "[添加档案]",
+                        "bottom_trigger_ruin": "⁙废墟园林・编",
+                        "index_top_title": "《墟域图・遗构馆》收录漫游世界时所遇见的人造残构、荒地与被遗忘的地景，并持续建构一个不断扩张的废墟世界。",
+                        "index_p1": "每一处遗构，都保存着稍纵即逝的「如画美」，也孕育着另一场崩解的开始。这些残构成为《废墟园林》的土壤：作品借用仿古遗迹园林中「人为安排毁灭」的美学，将漫长的风化、侵蚀与坍塌浓缩成一场可被观看、聆听与经历的「自毁终章」。⁙",
+                        "index_p2": "《废墟园林》透过图形记谱与机关结构，将遗构编排成一件由时间、自然，以及建造之初便已写入结构的崩解共同演奏的乐器。当秩序逐渐松动，建筑开始以失去语意的声响、振动与回响演绎自身的崩解；材料也在失去功能后重新显露物性，自然则重新介入空间的节律。⁙",
+                        "index_conclusion": "最终，所有影像、声音与遗物重新汇入《遗构馆》，成为持续更新的废墟档案。它们散落于地图之中，与仍然繁盛的人造景观落在同一张地图之上，如同尚未显现的遗构，共同拼凑出仍未完成的《墟域图》。",
+                        "index_title": "— 索引 —",
+                        "cat_land": "土地",
+                        "cat_arch": "建筑",
+                        "cat_status": "状态",
+                        "cat_nature": "自然",
+                        "tag_mountain": "山",
+                        "tag_slope": "坡",
+                        "tag_shore": "岸",
+                        "tag_bay": "湾",
+                        "tag_port": "埠",
+                        "tag_plateau": "塬",
+                        "tag_valley": "谷",
+                        "tag_cliff": "崖",
+                        "tag_corridor": "廊",
+                        "tag_room": "厅",
+                        "tag_dwelling": "居",
+                        "tag_wall": "垣",
+                        "tag_fort": "堡",
+                        "tag_hall": "殿",
+                        "tag_tower": "塔",
+                        "tag_tunnel": "甬",
+                        "tag_column": "柱",
+                        "tag_factory": "厂",
+                        "tag_vessel": "舰",
+                        "tag_rail": "辙",
+                        "tag_courtyard": "庭",
+                        "tag_dam": "坝",
+                        "tag_chamber": "室",
+                        "tag_monument": "碑",
+                        "tag_ruin": "残",
+                        "tag_remains": "骸",
+                        "tag_desolate": "荒",
+                        "tag_sunken": "沉",
+                        "tag_scorched": "焦",
+                        "tag_crack": "裂",
+                        "tag_eroded": "蚀",
+                        "tag_relocated": "迁",
+                        "tag_compressed": "压",
+                        "tag_seepage": "渗",
+                        "tag_vine": "蔓",
+                        "tag_moss": "苔",
+                        "tag_tree": "木",
+                        "tag_spike": "棘",
+                        "tag_ash": "灰",
+                        "tag_membrane": "膜",
+                        "tag_water": "水",
+                        "tag_wave": "波",
+                        "tag_magnetic": "磁",
+                        "tag_soil": "土",
+                        "tag_sand": "沙",
+                        "specimen_visual": "视觉标本",
+                        "specimen_audio": "声音标本",
+                        "specimen_object": "物件标本",
+                        "specimen_note": "注释卡",
+                        "title_radio_score": "图形记谱 | 焦土以太",
+                        "title_radio_instrument": "废墟乐器 | 以太狭间",
+                        "title_radio_film": "废墟园林·其二 | 焦土以太朽塔",
+                        "title_radio_rec": "电台路焦土 | 遗构录",
+                        "desc_radio_score": "以太共振场图形记谱。",
+                        "desc_radio_instrument": "高频回路临界声学实验。",
+                        "desc_radio_film": "残构电磁谐谑演奏。",
+                        "title_plague_score": "图形记谱 | 心脏残响",
+                        "title_plague_instrument": "废墟乐器 | 锈血心脏",
+                        "title_plague_film": "废墟园林·其一 | 沉墟死水心室",
+                        "title_plague_rec": "瘟猪坝沉墟 | 遗构录",
+                        "desc_plague_score": "死水沉积图形记谱。",
+                        "desc_plague_instrument": "残片心脏敲击声学实验。",
+                        "desc_plague_film": "沉墟内核坍缩回响演奏。",
+                        "ui_pdf_loading": "读取图纸中...",
+                        "ui_local_preview_hint": "提示：本地预览模式 (file:///)，不支援翻页 HUD。请使用 Live Server 以获得完整体验。",
+                        "ui_garden": "废墟园林",
+                        "ui_record": "遗构录",
+                        "ui_creator": "墟构师: 罗清源",
+                        "ui_recorder": "记录者: 罗清源",
+                        "ui_recorder_label": "记录者: ",
+                        "ui_archive_date": "归档: ",
+                        "ui_auto_nav": "自动导航 ⌖",
+                        "ui_collapse_compass": "[ 收起罗盘 ×]",
+                        "ui_compass_nav": "⊙ 导航罗盘",
+                        "site_name_瘟猪坝沉墟": "沉墟心室",
+                        "site_desc_瘟猪坝沉墟": "人工湖的蓄水持续渗入地下，水沿裂隙缓慢渗入旧地基与溶洞，在低洼地势孕育出一片沉墟。污水与地下水在此缓慢交换，整片废墟终于坏死为一滩沉默的黑水，如同建筑始终无法结痂的伤口。",
+                        "site_name_电台路焦土": "朽塔焦土",
+                        "site_desc_电台路焦土": "短波天线与工业遗构曾共同构成一片震荡的电磁场域。厂房虽已夷为平地，那些曾高速撕裂空气的无线电噪声却仿佛仍残留于此。场域没有随建筑消失，而是沉积在拉线铁塔切割出的土地、锈蚀钢缆的张力，以及焦土的空间秩序之中。",
+                        "site_name_山葬灰脉": "山葬灰脉",
+                        "site_desc_山葬灰脉": "废弃多年的旧水泥厂，部分建筑已经坍毁，其余危楼仍等待着下一次崩塌。风化、渗水与重力持续完成这场漫长的山葬，植物沿着砖缝与裂隙缓慢生长，如同撬开沉积岩般，一寸寸拆解着这座工厂，直至它重新回归山体。",
+                        "site_name_琉棘庭": "琉棘庭",
+                        "site_desc_琉棘庭": "巨大的荒土残构之间，一块被围墙封存的空地孤立其中。它没有房屋，也没有窗户，只留下一道狭窄的出口，仿佛从建成之初便已被遗忘。墙顶嵌满的玻璃碎片原为防越而设，而当墙体逐渐风化崩裂，它们仍透明、锋利，继续守护着一片始终无人问津的空地。",
+                        "site_name_裂翼坪": "裂翼坪",
+                        "site_desc_裂翼坪": "湖中的机场停用后，整条跑道被挖裂，重新恢复为草原地貌。引擎的轰鸣早已散去，只剩崩裂的跑道残片散落于边缘。裂缝之间，一棵形似单翼的树木抱着跑道残片生长，仿佛替这片再也无法起飞的土地，保留了最后一片翅膀。",
+                        "site_name_轨畔孤构": "轨畔孤构",
+                        "site_desc_轨畔孤构": "这里曾是蒸汽机车的维修工场。工场消失后，铁轨仍将列车送往远方，而留在原地的混凝土遗构，渐渐成为铁路旁一座无人光顾的工业废丘。",
+                        "site_name_残柱林": "残柱林",
+                        "site_desc_残柱林": "这片树木来自近百年前城市规划时留下的树苗。数十年后，巨树因自身重量折裂，枝干劈开了石柱建筑的屋顶。这场坍塌并非偶然，而是从树苗落地那天便开始累积。当人们惊讶于屋顶被巨树劈开时，才发现真正被遗忘的，或许一直都是那棵不断长大的树。",
+                        "site_name_池骸湾": "池骸湾",
+                        "site_desc_池骸湾": "人们曾以巨大的工程将海水引入建筑，把海洋驯服成一座浴场；如今，海重新将建筑收回体内，建筑开始遵循潮汐，而非人们。潮水持续侵蚀池壁与地基，碎石与绿藻逐渐覆满池底。海没有淹没建筑，只是让海岸重新长进了建筑里。",
+                        "site_name_褶层湾": "褶层湾",
+                        "site_desc_褶层湾": "数万年前，冰川留下砂砾层；百年间，人类又以采矿、铁路与工业反覆雕刻这片土地。当一切功能依序消失后，唯有一列列菱形混凝土构造仍裸露于地景之中，如同文明在地层间留下的一道剖面。",
+                        "site_name_釉骸拓壁": "釉骸拓壁",
+                        "site_desc_釉骸拓壁": "工程塑料布紧密包覆着残墙，连磁砖裂纹与墙面的起伏都被完整转印。它并未修复废墟，而是在拆除之前，替建筑留下最后一次完整的形体，如同覆盖于遗构表面的一层拓膜。",
+                        "site_name_叠骸构阵": "叠骸构阵",
+                        "site_desc_叠骸构阵": "工厂依丘陵展开，起伏的地势、高低错落的楼层、交错的框架与各异的朝向，共同编织出一套复杂的空间。工厂运作时，墙体、功能与路牌维持着这套秩序，也掩盖了其中难以被看穿的构造。直到墙面剥落、楼板坍塌，建筑只剩交错的骨架与阴影，那座始终潜藏其中的迷宫才缓缓现身。",
+                        "site_name_苔网塬": "苔网塬",
+                        "site_desc_苔网塬": "巨大的绿色工程纱网覆盖着建筑残骸，如同一层蔓延于工业遗址上的工业苔藓。混凝土碎块托起网面，树木从钢筋与碎石间缓缓将它顶起，使整片地表微微起伏。原本覆盖废墟的工程材料，在漫长风化中逐渐承接泥土、孕育植物，最终成为建筑消失后的第一层生命。",
+                        "site_name_陆坞舰骸": "陆坞舰骸",
+                        "site_desc_陆坞舰骸": "这里或许是距离海洋最遥远的地方之一，却矗立着一艘航空母舰。它从未航行，也从未真正停泊，只是在池塘中央维系着一场关于海洋的想像。当池水干涸、金属蒙皮逐渐拆除，航母开始显露混凝土与钢筋的本体。海洋的幻象随之层层剥落，只留下池塘中央一座混凝土遗构。",
+                        "site_name_墟响厅": "墟响厅",
+                        "site_desc_墟响厅": "厚重的屋顶、夸张的柱列与倾斜墙面共同塑造出一组为展示而存在的建筑。建筑内部充满因外部造型而产生的剩余空间。玻璃展柜依然镶嵌在斜墙之中，只是柜内早已空无一物。镜面于是开始反射彼此，让空间不断展示自己的空壳。",
+                        "site_name_波蚀脊堤": "波蚀脊堤",
+                        "site_desc_波蚀脊堤": "波浪般起伏的烂尾楼只剩混凝土骨架裸露于海风之中，海风穿过层层空洞，整座建筑发出如骸骨般低沉的呜鸣。海岸上的人造物，似乎都拥有共同的宿命。消波块因抵挡海浪而耗尽自身，这座建筑则因失去建造的目的，长年风化于盐雾与海风之中。两者都在走向毁灭，一者因使命而消耗，一者因失去使命而风化。最荒诞的是，消波块至今仍默默消耗着自己，只为守护一座早已失去存在理由的建筑。",
+                        "site_name_曜原驿": "曜原驿",
+                        "site_desc_曜原驿": "四千五百亩光伏阵列覆盖了原本的土地，如同另一种收割阳光的农田。曾经服务道路的驿站被留在其中，却失去了道路，也失去了旅人，只剩无尽的光伏板向地平线延展。它不再等待任何人，只与每日升起的太阳共同维持着这片新的地景。",
+                        "site_name_溶境遗廊": "溶境遗廊",
+                        "site_desc_溶境遗廊": "地下商业街与隧道荒废多年后，逐渐受到雨水与地下渗流侵蚀。封闭的店铺中，人体模特、镜面与陈列仍停留于原位，替代早已消失的人群，而裂纹、霉斑与锈迹则持续覆写其上。隧道穹顶仍保留着美人鱼雕塑与海洋壁画，维持着一场人工海洋的幻象。随着地下水持续涌入，这片幻象最终被真正的水重新占据。",
+                        "site_name_荒娱敖包": "荒娱敖包",
+                        "site_desc_荒娱敖包": "在这片难以离开的寒冬荒原上，人们或许期待信标中出现地图、电话，或任何能与外界建立联系的工具。然而留下的却是成堆的游戏机台。它们被堆叠成一座电子敖包，像一份错误抵达的礼物，也像一次许错了愿，在一无所有之地留下了最无用、也荒诞到令人绝望的存在。",
+                        "site_name_彩壳堡": "彩壳堡",
+                        "site_desc_彩壳堡": "农田之上矗立着一座未完成的城堡。混凝土与钢筋仍裸露于外，外墙却已涂满鲜艳的色彩。童话比建筑更早完成，也比建筑更早荒废。",
+                        "site_name_削岩残居": "削岩残居",
+                        "site_desc_削岩残居": "整座山体被开采成层层阶地，散落其上的屋舍如同被收割过的作物，只剩残墙停留于岩层之间。当矿石被运走后，它们仍留在原地，与裸露的山体一同缓慢风化。",
+                        "site_name_迁痕空埠": "迁痕空埠",
+                        "site_desc_迁痕空埠": "沿江旧码头逐渐退出城市，「拆」与「未签字」记录着这场搬迁。拆除后，生活痕迹仍停留于原处：盆栽沿裂缝生长，线束仍牵引着坠落的墙板，高处的椅子与「请留意您的贵重物品」标语，依然停留在早已没有人的日常里。人离开后，残骸、植物与生活的痕迹，仍共同维持着这片岸线。",
+                        "site_name_山骸窟殿": "山骸窟殿",
+                        "site_desc_山骸窟殿": "这座沿山而建的磷矿工厂，因层层堆叠的体量与巨大尺度，被称为「小布达拉宫」。远望时，它像一座矗立于山间的宫殿；走近后，映入眼前的却是输送带与厂房。神圣的形态与工业的功能在此重叠，山体最终留下了一座为矿石而建、也随矿石一同废弃的宫殿。",
+                        "site_name_土还灶垣": "土还灶垣",
+                        "site_desc_土还灶垣": "据说这片夯土残墙曾是一座寺院的厨房。风雨沿着夯层逐年削去墙体，棱角变钝，泥土与碎石重新显露。这些墙原本从山土中一层层夯筑而成，如今又一层层剥落回到土地，远看时已逐渐分不清是建筑正在消失，还是山体正在将它收回。",
+                        "site_name_崖隐蚀垣": "崖隐蚀垣",
+                        "site_desc_崖隐蚀垣": "这处夯土残构高悬于坡崖之上。据当地的说法，它大约已有三、四百年历史，过去曾是高僧居住与闭关修行的地方。沿坡再走一段，曾经还有一座寺院，如今已被夷平；这一带过去也分布着许多供人闭关的空间。墙面一列列孔洞仍保留着木梁曾经穿入的骨位。木构早已朽尽，只剩厚重土墙嵌在山体边缘，任风雨沿梁孔与裂缝持续掏空，像一处仍被山体保存着的修行遗址。",
+                        "site_name_暮辉骸殿": "暮辉骸殿",
+                        "site_desc_暮辉骸殿": "这座未完成的巨型建筑紧邻铁路矗立。幕墙与装饰从未抵达，梁柱、楼板与核心结构因此长期裸露，在夕照下构成一座异常完整的混凝土骨架。纤细的柱网、开阔的楼层、重复的结构尺度与纵深，使它在失去建筑功能之前，先获得了一种近似巨型雕塑的庄严。它并未真正经历从繁荣到衰败的过程，而是在尚未完成时便被遗弃：一种从未实现的辉煌，只剩下结构自身继续维持它的轮廓。铁路成为它唯一持续运作的观众席，而所有观看都发生在高速掠过的车窗之中。",
+                        "site_name_褶脊胚庭": "褶脊胚庭",
+                        "site_desc_褶脊胚庭": "不规则石块砌成的石垣托起一座未完成的对称混凝土建筑。两翼在中央以廊桥连接，但连接处并未保持平直：结构向外鼓出，像两块尚未硬化的水泥胚体在相互挤压时，将中间的桥廊一并揉皱、顶起。站在斜下方仰望，很难判断这块突起究竟是在向上隆起，还是正从建筑表面向外挤出。挤压似乎也延伸到了两翼之间的庭院；狭窄空间里的树木与杂草比周围更加密集，仿佛左右两堵墙不断收拢，将植被像流体一样铲进这条人工形成的谷地。",
+                        "ui_seq_1": "其一",
+                        "ui_seq_2": "其二",
+                        "ui_seq_3": "其三",
+                        "ui_seq_4": "其四",
+                        "ui_seq_5": "其五",
+                        "ui_seq_6": "其六",
+                        "ui_seq_7": "其七",
+                        "ui_seq_8": "其八",
+                        "ui_seq_9": "其九",
+                        "ui_seq_10": "其十",
+                        "ui_garden_archive": "废墟园林档案",
+                        "ui_record_archive": "遗构录",
+                        "ui_img_files": "图像档案",
+                        "ui_map_files": "测绘档案",
+                        "ui_txt_files": "文字档案",
+                        "ui_graphic_score": "图形记谱",
+                        "ui_instrument_demo": "乐器演示",
+                        "ui_ruin_theater": "废墟剧场",
+                        "ch1_0": "引序：滞壳",
+                        "ch1_1": "阶段一：残存",
+                        "ch1_2": "阶段二：枯蚀",
+                        "ch1_3": "阶段三：磨损",
+                        "ch1_4": "阶段四：空撑",
+                        "ch1_5": "尾声：余响",
+                        "ch2_0": "引序：狭间",
+                        "ch2_1": "阶段一：非谐",
+                        "ch2_2": "阶段二：震颤",
+                        "ch2_3": "阶段三：风噪",
+                        "ch2_4": "阶段四：共振",
+                        "ch2_5": "阶段五：余鸣",
+                        "ch2_6": "尾声：虚基",
+                        "nav_prefix": "正在导航前往：",
+                        "nav_dir_opening": "正在打开档案目录..."
+            }
+};
+
+
+        const decodeTokens = new WeakMap();
+
+        // Safari/WebKit safety net.
+        // IMPORTANT: this does not change the original cyber-decode animation.
+        // Each element still keeps its own RAF loop and the original random 0–200 ms stagger.
+        const safariDecodeSafety = {
+            isSafari: (() => {
+                const ua = navigator.userAgent || '';
+                const vendor = navigator.vendor || '';
+                return /Safari/i.test(ua) &&
+                    /Apple/i.test(vendor) &&
+                    !/(CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Chromium)/i.test(ua);
+            })(),
+            generation: 0,
+            targetLang: 'en',
+            finalizeTimer: null
+        };
+
+        function finalizeSafariDecode(generation = safariDecodeSafety.generation) {
+            if (!safariDecodeSafety.isSafari) return;
+            if (generation !== safariDecodeSafety.generation) return;
+
+            const vault = languageVault[safariDecodeSafety.targetLang];
+            if (!vault) return;
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const targetText = vault[key];
+                if (!targetText || el.textContent === targetText) return;
+
+                // Cancel a RAF that Safari may have resumed late, then snap only
+                // unfinished labels to the language selected by the user.
+                decodeTokens.set(el, (decodeTokens.get(el) || 0) + 1);
+                el.textContent = targetText;
+            });
+        }
+
+        function scheduleSafariDecodeSafety(generation) {
+            if (!safariDecodeSafety.isSafari) return;
+            if (safariDecodeSafety.finalizeTimer) {
+                clearTimeout(safariDecodeSafety.finalizeTimer);
+            }
+
+            // Original animation: max 200 ms stagger + 1000 ms decode.
+            // Give WebKit a little breathing room, then repair only unfinished text.
+            safariDecodeSafety.finalizeTimer = window.setTimeout(() => {
+                finalizeSafariDecode(generation);
+            }, 1500);
+        }
+
+        // Safari can suspend RAF/timers while a tab/window loses visibility.
+        // On return, make sure no string remains half-decoded.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                finalizeSafariDecode();
+            }
+        });
+        window.addEventListener('pageshow', () => finalizeSafariDecode());
+
+        function cyberDecodeTranslate(element, targetText, duration = 1000) {
+            const originalText = element.textContent || '';
+            const originalLen = originalText.length;
+            const targetLen = targetText.length;
+            const startTime = performance.now();
+            const token = (decodeTokens.get(element) || 0) + 1;
+            decodeTokens.set(element, token);
+            let lastString = null;
+
+            function updateFrame(currentTime) {
+
+                if (decodeTokens.get(element) !== token) return;
+
+                const elapsed = currentTime - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+
+
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                const targetCutIndex = Math.round(targetLen * easeProgress);
+                const originalCutIndex = Math.round(originalLen * easeProgress);
+                const currentString = targetText.substring(0, targetCutIndex) +
+                    originalText.substring(originalCutIndex);
+
+
+                if (currentString !== lastString) {
+                    element.textContent = currentString;
+                    lastString = currentString;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateFrame);
+                } else if (element.textContent !== targetText) {
+                    element.textContent = targetText;
+                }
+            }
+
+            requestAnimationFrame(updateFrame);
+        }
+
+        function isElementOnScreen(element) {
+            const style = getComputedStyle(element);
+            if (style.display === 'none' || style.visibility === 'hidden') return false;
+
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 &&
+                rect.bottom >= 0 && rect.right >= 0 &&
+                rect.top <= window.innerHeight && rect.left <= window.innerWidth;
+        }
+
+
+        window.currentLang = 'en';
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+
+            const vaultEn = languageVault['en'];
+            document.documentElement.lang = 'en';
+            document.title = vaultEn.document_title || 'Ruin Atlas · Relic Archive';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (vaultEn[key]) {
+                    el.textContent = vaultEn[key];
+                }
+            });
+
+
+            setTimeout(() => {
+
+                const zhOption = document.querySelector('.wheel-item[data-lang="zh"]');
+                if (zhOption) {
+                    zhOption.click();
+                } else {
+
+                    switchLanguage('zh');
+                }
+            }, 800);
+        });
+        function switchLanguage(targetLang) {
+            window.currentLang = targetLang;
+            const vault = languageVault[targetLang];
+            if (!vault) return;
+
+            // Generation is only a correctness guard for delayed callbacks.
+            // It does not alter the original stagger or per-element animation.
+            const switchGeneration = ++safariDecodeSafety.generation;
+            safariDecodeSafety.targetLang = targetLang;
+            if (safariDecodeSafety.finalizeTimer) {
+                clearTimeout(safariDecodeSafety.finalizeTimer);
+                safariDecodeSafety.finalizeTimer = null;
+            }
+
+            document.documentElement.lang = targetLang === 'ja' ? 'ja' : targetLang === 'en' ? 'en' : 'zh-Hans';
+            if (vault.document_title) document.title = vault.document_title;
+            window.handleDocumentLanguageChange?.(targetLang);
+
+            const elementsToTranslate = document.querySelectorAll('[data-i18n]');
+
+            elementsToTranslate.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const targetText = vault[key];
+
+                if (targetText && el.textContent !== targetText) {
+
+                    // Preserve the original random stagger exactly.
+                    const randomDelay = Math.random() * 200;
+
+                    setTimeout(() => {
+                        // A delayed callback from an older language switch must never
+                        // wake up later and overwrite the currently selected language.
+                        if (switchGeneration !== safariDecodeSafety.generation) return;
+
+                        if (!isElementOnScreen(el)) {
+                            decodeTokens.set(el, (decodeTokens.get(el) || 0) + 1);
+                            el.textContent = targetText;
+                            return;
+                        }
+                        cyberDecodeTranslate(el, targetText, 1000);
+                    }, randomDelay);
+                }
+            });
+
+            scheduleSafariDecodeSafety(switchGeneration);
+        }</script>
+</body>
+</html>
