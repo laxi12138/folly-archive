@@ -53,7 +53,7 @@ a,button{cursor:crosshair}
   display:flex;
   align-items:center;
   gap:7px;
-  height:22px;
+  height:30px;
   color:var(--reader-muted);
   user-select:none
 }
@@ -63,13 +63,13 @@ a,button{cursor:crosshair}
   opacity:.62
 }
 .reader-tone-track-wrap{
-  position:relative;width:104px;height:18px;
+  position:relative;z-index:31;width:112px;height:30px;
   display:grid;align-items:center
 }
 .reader-tone-slider{
   appearance:none;-webkit-appearance:none;
-  width:104px;height:18px;margin:0;padding:0;
-  background:transparent;outline:none
+  position:relative;z-index:32;width:112px;height:30px;margin:0;padding:0;
+  background:transparent;outline:none;cursor:ew-resize;pointer-events:auto;touch-action:pan-y
 }
 .reader-tone-slider::-webkit-slider-runnable-track{
   height:1px;
@@ -91,21 +91,21 @@ a,button{cursor:crosshair}
 }
 .reader-tone-slider::-webkit-slider-thumb{
   -webkit-appearance:none;
-  width:9px;height:9px;margin-top:-4px;
+  width:11px;height:11px;margin-top:-5px;
   border-radius:50%;
   border:1px solid var(--reader-line-strong);
   background:var(--reader-paper);
   box-shadow:0 0 0 1px var(--reader-shadow)
 }
 .reader-tone-slider::-moz-range-thumb{
-  width:9px;height:9px;border-radius:50%;
+  width:11px;height:11px;border-radius:50%;
   border:1px solid var(--reader-line-strong);
   background:var(--reader-paper);
   box-shadow:0 0 0 1px var(--reader-shadow)
 }
 .reader-tone-warm-mark{
   position:absolute;pointer-events:none;
-  left:45%;top:8px;width:1px;height:4px;
+  left:45%;top:13px;width:1px;height:4px;
   background:var(--reader-line-strong);
   opacity:.42;transform:translateX(-.5px)
 }
@@ -307,7 +307,7 @@ a,button{cursor:crosshair}
 
 @media(max-width:1120px){
   .manifesto-actions{gap:13px}
-  .reader-tone-track-wrap,.reader-tone-slider{width:86px}
+  .reader-tone-track-wrap,.reader-tone-slider{width:92px}
   .manifesto-actions nav{gap:13px}
 }
 @media(max-width:900px){
@@ -315,7 +315,7 @@ a,button{cursor:crosshair}
   .manifesto-topbar>strong{font-size:18px}
   .manifesto-actions{gap:11px}
   .manifesto-actions nav{display:none}
-  .reader-tone-track-wrap,.reader-tone-slider{width:80px}
+  .reader-tone-track-wrap,.reader-tone-slider{width:86px}
   .manifesto-reader{grid-template-columns:minmax(0,1fr) 36px}
   .manifesto-index{display:none}
   .manifesto-document{width:min(100%,700px);padding:62px 22px 95px}
@@ -324,7 +324,7 @@ a,button{cursor:crosshair}
   .manifesto-topbar{height:auto;min-height:62px;gap:7px;padding:9px 12px}
   .manifesto-topbar>strong{font-size:16px}
   .manifesto-actions{gap:9px}
-  .reader-tone-track-wrap,.reader-tone-slider{width:62px}
+  .reader-tone-track-wrap,.reader-tone-slider{width:72px}
   .reader-tone-control{gap:4px}
   .manifesto-reader{top:62px}
   .manifesto-document{padding:48px 15px 82px}
@@ -333,4 +333,110 @@ a,button{cursor:crosshair}
   .manifesto-section{padding-top:37px}
   .manifesto-section h2{font-size:18px;margin-bottom:24px}
   .manifesto-section p{font-size:12.5px;line-height:1.88}
+}
+
+.reader-tone-control{z-index:30}
+.reader-tone-slider{position:relative;z-index:32;pointer-events:auto}
+.reader-tone-slider.is-dragging::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--reader-shadow)}
+.reader-tone-slider.is-dragging::-moz-range-thumb{box-shadow:0 0 0 3px var(--reader-shadow)}
+
+/* v70 · isolate the real range input from decorative layers */
+.reader-tone-track-wrap{pointer-events:auto}
+.reader-tone-warm-mark,.reader-tone-icon{pointer-events:none}
+input.reader-tone-slider[data-reader-tone]{pointer-events:auto}
+
+
+/* ==========================================================================
+   v74 · quieter manifesto reader / larger top-right controls
+   ========================================================================== */
+
+.manifesto-actions {
+  gap: 28px;
+}
+
+.manifesto-actions nav {
+  gap: 30px;
+  font-size: 13px;
+}
+
+.manifesto-actions a {
+  line-height: 1.25;
+}
+
+.language-switch {
+  gap: 7px;
+  font-size: 11.5px;
+}
+
+.language-switch button {
+  padding: 5px 2px;
+}
+
+.reader-tone-control {
+  gap: 9px;
+  height: 34px;
+}
+
+.reader-tone-icon {
+  width: 14px;
+  font-size: 13px;
+}
+
+.reader-tone-track-wrap,
+.reader-tone-slider {
+  width: 184px;
+}
+
+.reader-tone-track-wrap {
+  height: 34px;
+}
+
+.reader-tone-slider {
+  height: 34px;
+}
+
+.reader-tone-slider::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -6.5px;
+}
+
+.reader-tone-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+}
+
+.reader-tone-warm-mark {
+  top: 15px;
+  height: 5px;
+}
+
+/* The ideal layout has no separate right-hand progress/control rail. */
+.manifesto-reader {
+  grid-template-columns: 270px minmax(0, 1fr);
+}
+
+.manifesto-hud {
+  display: none !important;
+}
+
+@media (max-width: 1120px) {
+  .manifesto-actions { gap: 18px; }
+  .manifesto-actions nav { gap: 20px; font-size: 12px; }
+  .reader-tone-track-wrap,
+  .reader-tone-slider { width: 142px; }
+}
+
+@media (max-width: 900px) {
+  .manifesto-reader {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reader-tone-track-wrap,
+  .reader-tone-slider { width: 118px; }
+}
+
+@media (max-width: 560px) {
+  .language-switch { font-size: 10px; }
+  .reader-tone-track-wrap,
+  .reader-tone-slider { width: 82px; }
 }

@@ -59,9 +59,6 @@ The page deliberately keeps only one visible language at a time.`,
   const scroller = document.getElementById('manifesto-scroll');
   const documentEl = document.getElementById('manifesto-document');
   const indexNav = document.getElementById('manifesto-index-nav');
-  const progress = document.getElementById('manifesto-progress');
-  const up = document.getElementById('manifesto-up');
-  const down = document.getElementById('manifesto-down');
   const popover = document.getElementById('footnote-popover');
   const popoverNumber = document.getElementById('footnote-popover-number');
   const popoverText = document.getElementById('footnote-popover-text');
@@ -392,10 +389,6 @@ ${location.protocol === 'file:' ? UI.loadError.zhLocal : UI.loadError.zh}
 
   function update() {
     raf = 0;
-    const max = Math.max(1, scroller.scrollHeight - scroller.clientHeight);
-    const ratio = Math.min(1, Math.max(0, scroller.scrollTop / max));
-    progress.textContent = `${String(Math.round(ratio*100)).padStart(3,'0')}%`;
-
     const probe = scroller.scrollTop + scroller.clientHeight*.28;
     let active = sections[0]?.id || '';
     for (const section of sections) {
@@ -414,8 +407,6 @@ ${location.protocol === 'file:' ? UI.loadError.zhLocal : UI.loadError.zh}
     popover.hidden = true;
     scheduleUpdate();
   }, {passive:true});
-  up.addEventListener('click', () => scroller.scrollBy({top:-scroller.clientHeight*.72,behavior:'smooth'}));
-  down.addEventListener('click', () => scroller.scrollBy({top:scroller.clientHeight*.72,behavior:'smooth'}));
 
   window.addEventListener('ruinlanguagechange', event => {
     lang = event.detail.lang;

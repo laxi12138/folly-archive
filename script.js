@@ -7313,6 +7313,108 @@ function retractArchiveDocSmooth(docEl) {
     }, 620);
 }
 
+
+// ============================================================================
+// v72 · Static 128×128 thumbnail display
+// ----------------------------------------------------------------------------
+// These files are authored offline and placed directly in /thumbnails/.
+// There is NO browser-side generator, JSON config, Python integration,
+// source-photo fallback, or automatic thumbnail creation.
+// Images are requested only when an archive sheet is actually extracted or
+// when the expanded compass settles on a site.
+// ============================================================================
+const SITE_THUMBNAILS = Object.freeze({
+    "瘟猪坝沉墟": "thumbnails/effluent-sedimentation.webp",
+    "电台路焦土": "thumbnails/aether-scorched-earth.webp",
+    "山葬灰脉": "thumbnails/yellow-mountain.webp",
+    "硅脉遗厂": "thumbnails/silicon-vein-works.webp",
+    "琉棘庭": "thumbnails/walled-gallery.webp",
+    "裂翼坪": "thumbnails/fallen-wing-field.webp",
+    "轨畔孤构": "thumbnails/rail-side.webp",
+    "残柱林": "thumbnails/concrete-pole.webp",
+    "钟寂残堂": "thumbnails/bell-silent-church.webp",
+    "池骸湾": "thumbnails/bath-crack.webp",
+    "毒烬轮冢": "thumbnails/toxic-tire-pyre.webp",
+    "褶层湾": "thumbnails/quarry-bay-stairway.webp",
+    "隐染悬里": "thumbnails/suspended-homeland.webp",
+    "雾蚀空庐": "thumbnails/mist-eroded-hut.webp",
+    "锈祷圣堂": "thumbnails/rust-prayer-sanctuary.webp",
+    "釉骸拓壁": "thumbnails/membrane.webp",
+    "叠骸构阵": "thumbnails/fish-mouth.webp",
+    "苔网塬": "thumbnails/gloss-veil.webp",
+    "陆坞舰骸": "thumbnails/brick-battleship.webp",
+    "墟响厅": "thumbnails/mirror.webp",
+    "波蚀脊堤": "thumbnails/wave-eroded-structure.webp",
+    "曜原驿": "thumbnails/solar.webp",
+    "溶境遗廊": "thumbnails/aquarium-bunker.webp",
+    "荒娱敖包": "thumbnails/mountain-signal.webp",
+    "彩壳堡": "thumbnails/castle.webp",
+    "削岩残居": "thumbnails/roof.webp",
+    "隐阶空墅": "thumbnails/hidden-stair-villa.webp",
+    "暮辉骸殿": "thumbnails/afterglow-palace.webp",
+    "迁痕空埠": "thumbnails/dock.webp",
+    "山骸窟殿": "thumbnails/phospho.webp",
+    "山融灶垣": "thumbnails/earthwall.webp",
+    "崖隐蚀垣": "thumbnails/cliff-granary.webp",
+    "褶脊胚庭": "thumbnails/compressed-courtyard.webp"
+});
+
+function getThumbnailSite(siteOrSites) {
+    const list = Array.isArray(siteOrSites) ? siteOrSites : [siteOrSites];
+    return list.find(site => site?.name && SITE_THUMBNAILS[site.name]) || null;
+}
+
+function mountStaticThumbnail(frame, site) {
+    if (!frame) return;
+
+    const thumbnailSite = getThumbnailSite(site);
+    const src = thumbnailSite ? SITE_THUMBNAILS[thumbnailSite.name] : '';
+
+    if (!src) {
+        frame.replaceChildren();
+        frame.classList.remove('has-image');
+        frame.removeAttribute('data-thumbnail-src');
+        return;
+    }
+
+    if (
+        frame.dataset.thumbnailSrc === src &&
+        frame.querySelector('img')
+    ) {
+        return;
+    }
+
+    frame.classList.remove('has-image');
+    frame.dataset.thumbnailSrc = src;
+    frame.replaceChildren();
+
+    const img = new Image();
+    img.className = 'site-preview-thumbnail';
+    img.alt = '';
+    img.width = 128;
+    img.height = 128;
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.fetchPriority = 'low';
+    img.draggable = false;
+
+    img.addEventListener('load', () => {
+        if (frame.dataset.thumbnailSrc !== src) return;
+        frame.classList.add('has-image');
+    }, { once: true });
+
+    img.addEventListener('error', () => {
+        if (frame.dataset.thumbnailSrc !== src) return;
+        frame.replaceChildren();
+        frame.classList.remove('has-image');
+        frame.removeAttribute('data-thumbnail-src');
+    }, { once: true });
+
+    frame.appendChild(img);
+    img.src = src;
+}
+
+
 function buildFileStacks() {
     const stackGarden = document.getElementById('stack-garden');
     const stackRecord = document.getElementById('stack-record');
@@ -7368,6 +7470,11 @@ function buildFileStacks() {
             const uniqueRecorders = [...new Set(entrySites.map(site => site.recorder || '罗清源'))];
             const recorderText = uniqueRecorders.join(' / ');
             const secondaryRecordHtml = isGarden ? '' : buildArchiveDocSecondaryRecords(entrySites);
+            const thumbnailSite = getThumbnailSite(entrySites);
+            if (thumbnailSite) {
+                docEl.classList.add('has-thumbnail');
+                docEl.dataset.thumbnailSite = thumbnailSite.name;
+            }
 
             const titleTextHtml = isGarden
                 ? `<span data-i18n="ui_garden">废墟园林</span> · <span data-i18n="ui_seq_${index + 1}">其${seq}</span> | <span class="doc-site-name" data-i18n="site_name_${initialSite.name}">${initialSite.name}</span>`
@@ -7392,6 +7499,7 @@ function buildFileStacks() {
             docEl.innerHTML = `
                 <div class="doc-meta">[ <span data-i18n="${typeKey}">${typeText}</span> ] | <span data-i18n="ui_archive_date">归档: </span><span class="doc-archive-date">${archiveDateText}</span></div>
                 <div class="doc-title">${titleTextHtml}</div>
+                <div class="archive-doc-thumbnail" aria-hidden="true"></div>
                 <div class="doc-meta doc-identity-meta">${isGarden
                     ? `<span data-i18n="ui_creator">墟构师: 罗清源</span>`
                     : `<span data-i18n="ui_recorder_label">记录者: </span><span class="doc-recorder-name">${recorderText}</span>${secondaryRecordHtml}`}
@@ -7430,10 +7538,17 @@ function buildFileStacks() {
                     if (gardenStack) {
                         const gardenStyle = getComputedStyle(gardenStack);
                         const gardenBottom = parseFloat(gardenStyle.bottom);
-                        const gardenExtractTop = parseFloat(gardenStyle.getPropertyValue('--garden-extract-top'));
+                        const recordReferenceTop = parseFloat(
+                            gardenStyle.getPropertyValue('--record-reference-garden-extract-top')
+                        );
+                        const gardenExtractTop = parseFloat(
+                            gardenStyle.getPropertyValue('--garden-extract-top')
+                        );
                         gardenViewportTop = window.innerHeight
                             - (Number.isFinite(gardenBottom) ? gardenBottom : 120)
-                            + (Number.isFinite(gardenExtractTop) ? gardenExtractTop : -233);
+                            + (Number.isFinite(recordReferenceTop)
+                                ? recordReferenceTop
+                                : (Number.isFinite(gardenExtractTop) ? gardenExtractTop : -233));
                     }
 
                     const targetViewportTop = Math.max(18, gardenViewportTop * 0.70);
@@ -7443,6 +7558,16 @@ function buildFileStacks() {
 
                 docEl.classList.remove('retracting');
                 docEl.classList.add('extracted');
+
+                // v72: the 128×128 WebP enters the network/decode pipeline only
+                // after the sheet is actually pulled out.
+                if (thumbnailSite) {
+                    mountStaticThumbnail(
+                        docEl.querySelector('.archive-doc-thumbnail'),
+                        thumbnailSite
+                    );
+                }
+
                 if (!isGarden) {
                     recordStackSlider.extractedDoc = docEl;
                 }
@@ -8480,6 +8605,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const compassModule = document.getElementById('global-compass-module');
     const compassWheel = document.getElementById('compass-site-wheel');
     const compassBtn = document.getElementById('global-compass-btn');
+    const compassThumbnailFrame = document.getElementById('compass-thumbnail-frame');
 
     if (!compassModule || !compassWheel || !compassBtn) return;
 
@@ -8560,6 +8686,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     'active',
                     parseInt(el.dataset.realIndex, 10) === realIndex
                 ));
+
+                const selectedSite = sites[realIndex];
+                if (compassThumbnailFrame) {
+                    mountStaticThumbnail(compassThumbnailFrame, selectedSite);
+                }
 
                 const targetMarkerData = markers[realIndex];
                 if (targetMarkerData?.marker && window.setCompassTarget) {

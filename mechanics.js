@@ -135,24 +135,14 @@
       button.dataset.recordCode = record.code;
       if (activeRecord?.code === record.code) button.classList.add('active');
 
-      const code = document.createElement('span');
-      code.className = 'record-code';
-      code.textContent = record.code;
-
       const title = document.createElement('span');
       title.className = 'record-title';
       title.textContent = local(record.title);
 
-      const tags = document.createElement('span');
-      tags.className = 'record-tags';
-      record.tags.slice(0, 4).forEach(tag => {
-        const t = document.createElement('span');
-        t.className = 'record-tag';
-        t.textContent = labelForTag(tag);
-        tags.appendChild(t);
-      });
-
-      button.append(code, title, tags);
+      // v74: the list is deliberately reduced to one line per mechanism.
+      // Codes and tag previews remain in the data model but are not repeated
+      // in the browsing column; the selected sheet still carries its tags.
+      button.append(title);
       button.addEventListener('click', () => selectRecord(record));
       frag.appendChild(button);
     });

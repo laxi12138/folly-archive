@@ -5274,3 +5274,236 @@ cubic-bezier(.2,.8,.2,1);
     .index-manifesto-crossref { margin: 0 0 9px; }
     .index-manifesto-link { font-size: 9px; }
 }
+
+
+/* ==========================================================================
+   v72 · Static thumbnail previews
+   --------------------------------------------------------------------------
+   Authored WebP files only.  No runtime generation or source-photo fallback.
+   Each preview image remains at its native authored display size: 128×128 px.
+   ========================================================================== */
+
+.archive-doc-thumbnail {
+    display: none;
+    width: 128px;
+    height: 128px;
+    padding: 6px;
+    box-sizing: content-box;
+    border: 1px solid rgba(0, 0, 0, 0.28);
+    background: rgba(255, 255, 255, 0.22);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.archive-doc.extracted.has-thumbnail .archive-doc-thumbnail.has-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.position-left .archive-doc-thumbnail {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.position-right .archive-doc-thumbnail {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.site-preview-thumbnail {
+    display: block;
+    width: 128px;
+    height: 128px;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    flex: 0 0 128px;
+    pointer-events: none;
+}
+
+/* The thumbnail is inserted immediately below the site title.  Once a card is
+   open, tighten the old large archival spacers so title + image + metadata +
+   navigation still read as one sheet. */
+.archive-doc.extracted.has-thumbnail > .doc-meta:first-child {
+    margin-bottom: 28px;
+}
+
+.archive-doc.extracted.has-thumbnail .doc-title {
+    margin-bottom: 14px;
+}
+
+.archive-doc.extracted.has-thumbnail .archive-doc-thumbnail {
+    margin-bottom: 20px;
+}
+
+.archive-doc.extracted.has-thumbnail .doc-identity-meta {
+    margin-top: 0;
+    margin-bottom: 22px;
+}
+
+.archive-doc.extracted.has-thumbnail .doc-coordinate-meta {
+    margin-top: 0;
+    margin-bottom: 10px !important;
+}
+
+/* The right Ruin Garden sheet must rise farther because its native 505px paper
+   now contains a real 128px preview.  Keep the left Record sheet's v54
+   reference at the former -233px so its authored extraction height does not
+   move just because the right sheet moved. */
+.position-right {
+    --garden-extract-top: -330px;
+    --record-reference-garden-extract-top: -233px;
+}
+
+/* Global compass thumbnail: independent framed specimen directly below the
+   expanded module, matching the supplied effect drawing. */
+.compass-thumbnail-frame {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    display: none;
+    width: 128px;
+    height: 128px;
+    padding: 8px;
+    box-sizing: content-box;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.30);
+    background: rgba(255, 255, 255, 0.50);
+    backdrop-filter: blur(1.5px);
+    -webkit-backdrop-filter: blur(1.5px);
+    pointer-events: none;
+}
+
+.global-compass-module.expanded .compass-thumbnail-frame.has-image {
+    display: flex;
+}
+
+/* Portrait/landscape phone layouts already suppress the full wheel; do not
+   introduce a 128px preview into that compact compass trigger. */
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    .compass-thumbnail-frame {
+        display: none !important;
+    }
+}
+
+
+/* v73 · Archive Doc preview is ~30% smaller than the authored 128px source. */
+.archive-doc-thumbnail {
+    width: 90px;
+    height: 90px;
+    padding: 5px;
+}
+
+.archive-doc-thumbnail .site-preview-thumbnail {
+    width: 90px;
+    height: 90px;
+    flex-basis: 90px;
+}
+
+/* v73 · Compass preview sits around the screen's vertical center instead of
+   immediately beneath the compass module. */
+.compass-thumbnail-frame {
+    position: fixed;
+    top: 50vh;
+    right: 28px;
+    transform: translateY(-50%);
+}
+
+
+/* ==========================================================================
+   v75 · Thumbnail spacing / size / compass alignment
+   ========================================================================== */
+
+/* Archive Doc: keep the 90×90 preview, but give it more breathing room
+   above and below. */
+.archive-doc.extracted.has-thumbnail .doc-title {
+    margin-bottom: 26px;
+}
+
+.archive-doc.extracted.has-thumbnail .archive-doc-thumbnail {
+    margin-bottom: 30px;
+}
+
+/* Compass preview now uses the same visual size as Archive Doc previews. */
+.compass-thumbnail-frame {
+    width: 90px;
+    height: 90px;
+    padding: 5px;
+
+    /* Align its OUTER right edge with the fixed Global Compass Module. */
+    right: 190px;
+
+    /* Keep the v73 vertical placement around the viewport centre. */
+    top: 50vh;
+    transform: translateY(-50%);
+}
+
+.compass-thumbnail-frame .site-preview-thumbnail {
+    width: 90px;
+    height: 90px;
+    flex-basis: 90px;
+}
+
+/* Compact layouts already hide the desktop compass preview. */
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    .compass-thumbnail-frame {
+        display: none !important;
+    }
+}
+
+
+/* ==========================================================================
+   v76 · Compass thumbnail motion
+   ========================================================================== */
+
+/* Move the compass preview about 60px above the v75 position. */
+.compass-thumbnail-frame {
+    top: calc(50vh - 60px);
+
+    /* Keep the element mounted for exit animation. */
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+
+    /* Slight downward offset while hidden makes the opening motion feel
+       connected to the expanding compass module. */
+    transform: translateY(calc(-50% + 8px));
+
+    transition:
+        opacity 360ms ease,
+        transform 420ms cubic-bezier(.19, 1, .22, 1),
+        visibility 0s linear 420ms;
+}
+
+/* Only reveal the preview when the compass itself is expanded AND the image
+   has actually loaded. */
+.global-compass-module.expanded .compass-thumbnail-frame.has-image {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%);
+
+    transition:
+        opacity 420ms ease 70ms,
+        transform 460ms cubic-bezier(.19, 1, .22, 1) 40ms,
+        visibility 0s linear 0s;
+}
+
+/* v75 used display:flex here; v76 keeps the frame mounted so it can fade out. */
+.global-compass-module:not(.expanded) .compass-thumbnail-frame {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Compact layouts still suppress the desktop compass preview entirely. */
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    .compass-thumbnail-frame {
+        display: none !important;
+    }
+}
