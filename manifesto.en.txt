@@ -1,0 +1,15 @@
+Manifesto of the Ruinwright
+
+Prelude: After Architecture
+
+The English manuscript is still being revised. This file is intentionally short for the v67 interface test. Replace it later with the complete English text; the reader will rebuild the article and index automatically.
+
+Ruinwright Tenets
+
+The manifesto and the Mechanism Archive share one language state. Only the selected language is shown.
+
+After Ruinwrighting
+
+Footnote previews are active in the reader. Formal notes can later be written directly in the text with the [^id] syntax.
+
+[^system]: A future formal note can be written here.

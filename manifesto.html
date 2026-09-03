@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>墟构师宣言</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="manifesto.css?v=69">
+  <script src="ruin-language.js?v=69"></script>
+</head>
+<body>
+  <header class="manifesto-topbar">
+    <strong data-i18n="title">墟构师宣言</strong>
+    <div class="manifesto-actions">
+      <nav>
+        <a href="mechanics.html" data-i18n="mechanics">墟构机械数据库 ↗</a>
+        <a href="index.html" data-i18n="archive">遗构馆 ↗</a>
+      </nav>
+      <div class="reader-tone-control">
+        <span class="reader-tone-icon" aria-hidden="true">☼</span>
+        <div class="reader-tone-track-wrap">
+          <input class="reader-tone-slider" data-reader-tone type="range" min="0" max="100" value="0" step="1" aria-label="阅读环境">
+          <span class="reader-tone-warm-mark" aria-hidden="true"></span>
+        </div>
+        <span class="reader-tone-icon" aria-hidden="true">☾</span>
+      </div>
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-switch="zh">中</button>
+        <span>/</span>
+        <button type="button" data-lang-switch="en">EN</button>
+        <span>/</span>
+        <button type="button" data-lang-switch="ja">JP</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="manifesto-reader">
+    <aside class="manifesto-index">
+      <div class="manifesto-index-label" data-i18n="contents">章节</div>
+      <nav id="manifesto-index-nav"></nav>
+    </aside>
+
+    <section id="manifesto-scroll" class="manifesto-scroll" tabindex="0">
+      <article id="manifesto-document" class="manifesto-document" aria-live="polite">
+        <div class="manifesto-loading" data-i18n="loading">正在读取文本…</div>
+      </article>
+    </section>
+
+    <aside class="manifesto-hud" aria-label="阅读控制">
+      <button id="manifesto-up" type="button" aria-label="up">△</button>
+      <div id="manifesto-progress">000%</div>
+      <button id="manifesto-down" type="button" aria-label="down">▽</button>
+    </aside>
+  </main>
+
+  <div id="footnote-popover" class="footnote-popover" role="tooltip" hidden>
+    <div id="footnote-popover-number" class="footnote-popover-number"></div>
+    <div id="footnote-popover-text"></div>
+  </div>
+
+  
+  <script src="manifesto-notes.js?v=69"></script>
+  <script src="manifesto.js?v=69"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" translate="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>墟构机械数据库</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&family=IBM+Plex+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="mechanics.css?v=69">
+  <script src="ruin-language.js?v=69"></script>
+</head>
+<body>
+  <header class="mechanics-topbar">
+    <strong id="mechanics-page-title" data-i18n="title">墟构机械数据库</strong>
+    <div class="mechanics-actions">
+      <nav class="mechanics-nav">
+        <a href="manifesto.html" data-i18n="manifesto">墟构师宣言 ↗</a>
+        <a href="index.html" data-i18n="archive">遗构馆 ↗</a>
+      </nav>
+      <div class="reader-tone-control">
+        <span class="reader-tone-icon" aria-hidden="true">☼</span>
+        <div class="reader-tone-track-wrap">
+          <input class="reader-tone-slider" data-reader-tone type="range" min="0" max="100" value="0" step="1" aria-label="阅读环境">
+          <span class="reader-tone-warm-mark" aria-hidden="true"></span>
+        </div>
+        <span class="reader-tone-icon" aria-hidden="true">☾</span>
+      </div>
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-switch="zh">中</button>
+        <span>/</span>
+        <button type="button" data-lang-switch="en">EN</button>
+        <span>/</span>
+        <button type="button" data-lang-switch="ja">JP</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mechanics-layout">
+    <aside class="taxonomy-panel">
+      <div class="panel-kicker" data-i18n="classification">分类</div>
+      <button class="taxonomy-all active" data-filter="all" type="button">
+        <span class="taxonomy-number">00</span><span data-i18n="allRecords">全部档案</span>
+      </button>
+      <div id="taxonomy-tree" class="taxonomy-tree"></div>
+    </aside>
+
+    <section class="record-panel">
+      <div class="record-toolbar">
+        <span id="record-filter-label" data-i18n="allRecords">全部档案</span>
+      </div>
+      <div id="mechanism-records" class="mechanism-records"></div>
+    </section>
+
+    <section class="drawing-stage">
+      <div class="sheet-holder">
+        <article id="mechanism-sheet" class="mechanism-sheet" aria-live="polite">
+          <div class="sheet-register reg-a"></div>
+          <div class="sheet-register reg-b"></div>
+          <div class="sheet-register reg-c"></div>
+          <div class="sheet-register reg-d"></div>
+
+          <div id="sheet-visual" class="sheet-visual">
+            <div class="empty-drawing">
+              <span class="empty-symbol" aria-hidden="true"></span>
+              <small data-i18n="selectRecord">选择左侧机械档案</small>
+            </div>
+          </div>
+
+          <footer class="sheet-footer">
+            <div>
+              <div id="sheet-title" class="sheet-title" data-i18n="nothingSelected">未选择机械档案</div>
+              <div id="sheet-note" class="sheet-note" data-i18n="loadOnSelect">图纸文件只在被选中时加载。</div>
+            </div>
+            <div id="sheet-tags" class="sheet-tags"></div>
+          </footer>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  
+  <script src="mechanics-data.js?v=69"></script>
+  <script src="mechanics.js?v=69"></script>
+</body>
+</html>
