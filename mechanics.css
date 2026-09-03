@@ -69,7 +69,7 @@ button{color:inherit}
   display:flex;
   align-items:center;
   gap:7px;
-  height:30px;
+  height:22px;
   color:var(--reader-muted);
   user-select:none
 }
@@ -81,9 +81,8 @@ button{color:inherit}
 }
 .reader-tone-track-wrap{
   position:relative;
-  z-index:31;
-  width:112px;
-  height:30px;
+  width:104px;
+  height:18px;
   display:grid;
   align-items:center
 }
@@ -91,17 +90,12 @@ button{color:inherit}
   --thumb:var(--reader-text);
   appearance:none;
   -webkit-appearance:none;
-  position:relative;
-  z-index:32;
-  width:112px;
-  height:30px;
+  width:104px;
+  height:18px;
   margin:0;
   padding:0;
   background:transparent;
-  outline:none;
-  cursor:ew-resize;
-  pointer-events:auto;
-  touch-action:pan-y
+  outline:none
 }
 .reader-tone-slider::-webkit-slider-runnable-track{
   height:1px;
@@ -123,15 +117,15 @@ button{color:inherit}
 }
 .reader-tone-slider::-webkit-slider-thumb{
   -webkit-appearance:none;
-  width:11px;height:11px;
-  margin-top:-5px;
+  width:9px;height:9px;
+  margin-top:-4px;
   border-radius:50%;
   border:1px solid var(--reader-line-strong);
   background:var(--reader-paper);
   box-shadow:0 0 0 1px var(--reader-shadow)
 }
 .reader-tone-slider::-moz-range-thumb{
-  width:11px;height:11px;
+  width:9px;height:9px;
   border-radius:50%;
   border:1px solid var(--reader-line-strong);
   background:var(--reader-paper);
@@ -141,7 +135,7 @@ button{color:inherit}
   position:absolute;
   pointer-events:none;
   left:45%;
-  top:13px;
+  top:8px;
   width:1px;height:4px;
   background:var(--reader-line-strong);
   opacity:.42;
@@ -321,7 +315,7 @@ button{color:inherit}
 @media(max-width:1250px){
   .mechanics-layout{grid-template-columns:270px 340px minmax(0,1fr)}
   .sheet-holder{padding:42px 5%}
-  .reader-tone-track-wrap,.reader-tone-slider{width:92px}
+  .reader-tone-track-wrap,.reader-tone-slider{width:86px}
   .mechanics-actions{gap:14px}
 }
 @media(max-width:940px){
@@ -332,7 +326,7 @@ button{color:inherit}
   .mechanics-topbar{height:auto;min-height:62px;padding:10px 14px;gap:10px}
   .mechanics-topbar>strong{font-size:17px}
   .mechanics-actions{gap:11px}
-  .reader-tone-track-wrap,.reader-tone-slider{width:82px}
+  .reader-tone-track-wrap,.reader-tone-slider{width:74px}
   .mechanics-layout{height:auto;min-height:calc(100vh - 62px);grid-template-columns:1fr}
   .taxonomy-panel{max-height:none;border-right:0;border-bottom:1px solid var(--reader-line);padding-top:25px}
   .record-panel{max-height:360px;border-right:0;border-bottom:1px solid var(--reader-line)}
@@ -340,8 +334,3 @@ button{color:inherit}
   .sheet-holder{padding:28px 16px}
   .mechanism-sheet{height:540px;min-height:0}
 }
-
-.reader-tone-control{z-index:30}
-.reader-tone-slider{position:relative;z-index:32;pointer-events:auto}
-.reader-tone-slider.is-dragging::-webkit-slider-thumb{box-shadow:0 0 0 3px var(--reader-shadow)}
-.reader-tone-slider.is-dragging::-moz-range-thumb{box-shadow:0 0 0 3px var(--reader-shadow)}
