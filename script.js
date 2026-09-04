@@ -192,6 +192,273 @@ function isCompactViewport() {
     return window.innerWidth <= 768 || (window.innerWidth <= 950 && window.innerHeight <= 520);
 }
 window.isCompactViewport = isCompactViewport;
+
+// ============================================================================
+// v77 · Shared reading environment
+// ----------------------------------------------------------------------------
+// Main atlas now shares the same localStorage key used by Manifesto/Mechanics:
+//     ruin-reader-tone
+//
+// 0   = original paper-white archive
+// 45  = warm eye-care paper
+// 100 = low-contrast charcoal night archive
+//
+// Only the UI + authored atlas membrane change tone. Real photos, video,
+// PDFs and attachment media are not inverted.
+// ============================================================================
+const READER_TONE_KEY = 'ruin-reader-tone';
+const READER_WARM_POINT = 45;
+
+const READER_PALETTES = Object.freeze({
+    paper: {
+        bg: [255, 255, 251],
+        paper: [255, 255, 251],
+        text: [28, 28, 26],
+        muted: [103, 103, 97],
+        faint: [169, 169, 160],
+        line: [205, 205, 197],
+        lineStrong: [102, 102, 96],
+        marker: [17, 17, 17],
+        shadow: [0, 0, 0, 0.12],
+        thumbBrightness: 1,
+        thumbContrast: 1,
+        mineFace: [224, 224, 219, 0.48],
+        mineHover: [235, 235, 231, 0.68],
+        mineActive: [211, 211, 206, 0.54],
+        mineHi: [255, 255, 255, 0.98],
+        mineLo: [82, 82, 78, 0.58],
+        mineActiveHi: [0, 0, 0, 0.30],
+        mineActiveLo: [255, 255, 255, 0.94]
+    },
+    warm: {
+        bg: [235, 227, 209],
+        paper: [243, 235, 218],
+        text: [50, 47, 42],
+        muted: [103, 96, 84],
+        faint: [159, 150, 132],
+        line: [193, 183, 161],
+        lineStrong: [112, 105, 91],
+        marker: [57, 52, 44],
+        shadow: [58, 48, 35, 0.12],
+        thumbBrightness: 0.93,
+        thumbContrast: 0.98,
+        mineFace: [207, 199, 181, 0.62],
+        mineHover: [221, 212, 193, 0.76],
+        mineActive: [190, 181, 163, 0.66],
+        mineHi: [249, 242, 225, 0.92],
+        mineLo: [105, 96, 82, 0.62],
+        mineActiveHi: [86, 79, 68, 0.56],
+        mineActiveLo: [244, 236, 217, 0.88]
+    },
+    night: {
+        bg: [25, 26, 24],
+        paper: [31, 32, 30],
+        text: [204, 201, 191],
+        muted: [143, 141, 133],
+        faint: [86, 87, 81],
+        line: [66, 67, 62],
+        lineStrong: [121, 120, 112],
+        marker: [202, 199, 188],
+        shadow: [0, 0, 0, 0.28],
+        thumbBrightness: 0.70,
+        thumbContrast: 0.94,
+        /* Night keeps the old minesweeper relation inverted:
+           the key face is a medium gray visibly LIGHTER than the charcoal page. */
+        mineFace: [72, 73, 68, 0.82],
+        mineHover: [88, 89, 83, 0.90],
+        mineActive: [60, 61, 57, 0.88],
+        mineHi: [120, 121, 113, 0.84],
+        mineLo: [38, 39, 36, 0.92],
+        mineActiveHi: [38, 39, 36, 0.94],
+        mineActiveLo: [112, 113, 105, 0.86]
+    }
+});
+
+let readerToneValue = 0;
+let readerToneUiRaf = 0;
+let readerTonePending = null;
+let readerToneMapRefresh = null;
+
+function clampReaderTone(value) {
+    return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
+function readerToneMix(a, b, t) {
+    return a + (b - a) * t;
+}
+
+function readerToneMixArray(a, b, t) {
+    return a.map((value, index) => readerToneMix(value, b[index], t));
+}
+
+function readerToneInterpolate(value, key) {
+    const tone = clampReaderTone(value);
+
+    if (tone <= READER_WARM_POINT) {
+        const t = tone / READER_WARM_POINT;
+        const a = READER_PALETTES.paper[key];
+        const b = READER_PALETTES.warm[key];
+        return Array.isArray(a)
+            ? readerToneMixArray(a, b, t)
+            : readerToneMix(a, b, t);
+    }
+
+    const t = (tone - READER_WARM_POINT) / (100 - READER_WARM_POINT);
+    const a = READER_PALETTES.warm[key];
+    const b = READER_PALETTES.night[key];
+
+    return Array.isArray(a)
+        ? readerToneMixArray(a, b, t)
+        : readerToneMix(a, b, t);
+}
+
+function readerRgb(values) {
+    return `rgb(${values.slice(0, 3).map(v => Math.round(v)).join(', ')})`;
+}
+
+function readerRgba(values, alphaOverride = null) {
+    const alpha = alphaOverride == null
+        ? (values.length > 3 ? values[3] : 1)
+        : alphaOverride;
+
+    return `rgba(${values.slice(0, 3).map(v => Math.round(v)).join(', ')}, ${Math.max(0, Math.min(1, alpha)).toFixed(4)})`;
+}
+
+function readReaderTone() {
+    try {
+        const saved = localStorage.getItem(READER_TONE_KEY);
+        if (saved !== null && saved !== '') return clampReaderTone(saved);
+    } catch (_) {}
+    return 0;
+}
+
+function saveReaderTone(value) {
+    try {
+        localStorage.setItem(READER_TONE_KEY, String(Math.round(clampReaderTone(value))));
+    } catch (_) {}
+}
+
+function applyReaderTone(value, persist = false) {
+    const tone = clampReaderTone(value);
+    readerToneValue = tone;
+
+    const root = document.documentElement;
+    const bg = readerToneInterpolate(tone, 'bg');
+    const paper = readerToneInterpolate(tone, 'paper');
+    const text = readerToneInterpolate(tone, 'text');
+    const muted = readerToneInterpolate(tone, 'muted');
+    const faint = readerToneInterpolate(tone, 'faint');
+    const line = readerToneInterpolate(tone, 'line');
+    const lineStrong = readerToneInterpolate(tone, 'lineStrong');
+    const marker = readerToneInterpolate(tone, 'marker');
+    const shadow = readerToneInterpolate(tone, 'shadow');
+
+    root.style.setProperty('--reader-bg', readerRgb(bg));
+    root.style.setProperty('--reader-paper', readerRgb(paper));
+    root.style.setProperty('--reader-paper-95', readerRgba(paper, 0.95));
+    root.style.setProperty('--reader-paper-90', readerRgba(paper, 0.90));
+    root.style.setProperty('--reader-paper-85', readerRgba(paper, 0.85));
+    root.style.setProperty('--reader-paper-80', readerRgba(paper, 0.80));
+    root.style.setProperty('--reader-paper-55', readerRgba(paper, 0.55));
+    root.style.setProperty('--reader-paper-30', readerRgba(paper, 0.30));
+
+    root.style.setProperty('--reader-text', readerRgb(text));
+    root.style.setProperty('--reader-text-85', readerRgba(text, 0.85));
+    root.style.setProperty('--reader-text-67', readerRgba(text, 0.67));
+    root.style.setProperty('--reader-muted', readerRgb(muted));
+    root.style.setProperty('--reader-muted-70', readerRgba(muted, 0.70));
+    root.style.setProperty('--reader-faint', readerRgb(faint));
+    root.style.setProperty('--reader-line', readerRgb(line));
+    root.style.setProperty('--reader-line-strong', readerRgb(lineStrong));
+    root.style.setProperty('--reader-marker', readerRgb(marker));
+    root.style.setProperty('--reader-marker-soft', readerRgba(marker, 0.20));
+    root.style.setProperty('--reader-shadow', readerRgba(shadow));
+
+    root.style.setProperty(
+        '--reader-thumb-brightness',
+        readerToneInterpolate(tone, 'thumbBrightness').toFixed(4)
+    );
+    root.style.setProperty(
+        '--reader-thumb-contrast',
+        readerToneInterpolate(tone, 'thumbContrast').toFixed(4)
+    );
+
+    root.style.setProperty('--reader-mine-face', readerRgba(readerToneInterpolate(tone, 'mineFace')));
+    root.style.setProperty('--reader-mine-hover', readerRgba(readerToneInterpolate(tone, 'mineHover')));
+    root.style.setProperty('--reader-mine-active', readerRgba(readerToneInterpolate(tone, 'mineActive')));
+    root.style.setProperty('--reader-mine-hi', readerRgba(readerToneInterpolate(tone, 'mineHi')));
+    root.style.setProperty('--reader-mine-lo', readerRgba(readerToneInterpolate(tone, 'mineLo')));
+    root.style.setProperty('--reader-mine-active-hi', readerRgba(readerToneInterpolate(tone, 'mineActiveHi')));
+    root.style.setProperty('--reader-mine-active-lo', readerRgba(readerToneInterpolate(tone, 'mineActiveLo')));
+
+    root.dataset.readerToneValue = String(Math.round(tone));
+    root.style.colorScheme = tone >= 72 ? 'dark' : 'light';
+
+    const slider = document.getElementById('main-reader-tone');
+    if (slider && Number(slider.value) !== tone) {
+        slider.value = String(tone);
+    }
+    slider?.setAttribute('aria-valuenow', String(Math.round(tone)));
+
+    if (persist) saveReaderTone(tone);
+    if (readerToneMapRefresh) readerToneMapRefresh();
+
+    window.dispatchEvent(new CustomEvent('ruinreaderchange', {
+        detail: { value: tone }
+    }));
+}
+
+function queueReaderTone(value) {
+    readerTonePending = clampReaderTone(value);
+    if (readerToneUiRaf) return;
+
+    readerToneUiRaf = requestAnimationFrame(() => {
+        readerToneUiRaf = 0;
+        const next = readerTonePending;
+        readerTonePending = null;
+        applyReaderTone(next, false);
+    });
+}
+
+function bindMainReaderTone() {
+    const slider = document.getElementById('main-reader-tone');
+    if (!slider) return;
+
+    slider.value = String(readerToneValue);
+
+    slider.addEventListener('input', () => {
+        queueReaderTone(slider.value);
+    });
+
+    slider.addEventListener('change', () => {
+        applyReaderTone(slider.value, true);
+    });
+
+    slider.addEventListener('pointerdown', () => {
+        slider.classList.add('is-dragging');
+    });
+
+    slider.addEventListener('pointerup', () => {
+        slider.classList.remove('is-dragging');
+        applyReaderTone(slider.value, true);
+    });
+
+    slider.addEventListener('pointercancel', () => {
+        slider.classList.remove('is-dragging');
+    });
+
+    slider.addEventListener('keydown', event => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
+            requestAnimationFrame(() => applyReaderTone(slider.value, true));
+        }
+    });
+}
+
+// Apply the saved cross-page preference before Leaflet builds the atlas.
+applyReaderTone(readReaderTone(), false);
+bindMainReaderTone();
+
+
 const width = 4000;
 const height = 3000;
 let focusLocked = false;
@@ -531,24 +798,56 @@ function getMembraneState(currentZoom = map.getZoom()) {
     const triggerZoom = 1;
     const maxZoom = 8;
 
-    if (currentZoom <= triggerZoom) {
-        return {
-            opacity: 1,
-            filter: 'blur(0.4px) contrast(1.8) brightness(1.02) sepia(0.33) invert(0)',
-            blend: 'normal'
-        };
-    }
+    const ratio = currentZoom <= triggerZoom
+        ? 0
+        : Math.min(Math.max((currentZoom - triggerZoom) / (maxZoom - triggerZoom), 0), 1);
 
-    const ratio = Math.min(Math.max((currentZoom - triggerZoom) / (maxZoom - triggerZoom), 0), 1);
+    const tone = clampReaderTone(readerToneValue);
+    const warmT = Math.min(1, tone / READER_WARM_POINT);
+    const nightT = tone <= READER_WARM_POINT
+        ? 0
+        : Math.min(1, (tone - READER_WARM_POINT) / (100 - READER_WARM_POINT));
+
+    // Keep the authored zoom membrane, then gently bias it toward the selected
+    // reading environment. Warm mode remains paper-like; night mode gradually
+    // reverses the atlas itself without touching photos or other media.
     const dynamicBlur = 0.40 + (ratio * 2.3);
-    const dynamicContrast = 1.8 - (ratio * 0.8);
-    const dynamicBrightness = 1.02 + (ratio * 0.7);
-    const dynamicInvert = ratio * 0.15;
+
+    const zoomContrast = 1.8 - (ratio * 0.8);
+    const warmContrastScale = readerToneMix(1, 0.96, warmT);
+    const nightContrastScale = readerToneMix(1, 0.91, nightT);
+    const dynamicContrast = zoomContrast * warmContrastScale * nightContrastScale;
+
+    const zoomBrightness = 1.02 + (ratio * 0.7);
+    const warmBrightnessScale = readerToneMix(1, 0.92, warmT);
+    const nightBrightnessScale = readerToneMix(1, 0.84, nightT);
+    const dynamicBrightness = zoomBrightness * warmBrightnessScale * nightBrightnessScale;
+
+    const warmSepia = readerToneMix(0.33, 0.50, warmT);
+    const dynamicSepia = readerToneMix(warmSepia, 0.08, nightT);
+
+    const nightInvert = readerToneMix(0, 0.88, nightT);
+    const zoomInvert = ratio * 0.15;
+    const dynamicInvert = nightInvert + ((1 - nightInvert) * zoomInvert);
+
+    const zoomOpacity = 1 - (ratio * 0.45);
+    const warmOpacityScale = readerToneMix(1, 0.94, warmT);
+    const dynamicOpacity = zoomOpacity * warmOpacityScale;
 
     return {
-        opacity: 1 - (ratio * 0.45),
-        filter: `blur(${dynamicBlur.toFixed(3)}px) contrast(${dynamicContrast.toFixed(3)}) brightness(${dynamicBrightness.toFixed(3)}) sepia(0.33) invert(${dynamicInvert.toFixed(3)})`,
-        blend: 'multiply'
+        opacity: dynamicOpacity,
+        filter:
+            `blur(${dynamicBlur.toFixed(3)}px) ` +
+            `contrast(${dynamicContrast.toFixed(3)}) ` +
+            `brightness(${dynamicBrightness.toFixed(3)}) ` +
+            `sepia(${dynamicSepia.toFixed(3)}) ` +
+            `invert(${dynamicInvert.toFixed(3)})`,
+        // multiply is part of the existing parchment membrane, but once the
+        // atlas turns into a dark reversed drawing it must return to normal
+        // compositing or the pale lines disappear into the charcoal ground.
+        blend: nightT > 0.12
+            ? 'normal'
+            : ((ratio > 0 || tone > 3) ? 'multiply' : 'normal')
     };
 }
 
@@ -626,6 +925,18 @@ map.on('zoom', updateMembraneDuringZoom);
 map.on('zoomend', applyMembraneFinalEffect);
 map.on('moveend', normalizeWorldPosition);
 applyMembraneFinalEffect();
+
+// Reader-tone changes update the huge 4000×3000 atlas at a controlled rate.
+// UI paper/text variables remain 60fps; the expensive membrane stays ~20fps.
+let readerToneMapTimer = null;
+readerToneMapRefresh = () => {
+    if (readerToneMapTimer !== null) return;
+
+    readerToneMapTimer = window.setTimeout(() => {
+        readerToneMapTimer = null;
+        applyMembraneFinalEffect();
+    }, 50);
+};
 
 
 // v52 · Dynamic UI should never retrigger a full-page language pass.

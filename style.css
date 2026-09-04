@@ -5507,3 +5507,601 @@ cubic-bezier(.2,.8,.2,1);
         display: none !important;
     }
 }
+
+
+/* ==========================================================================
+   v77 · Main Atlas reading environment
+   ========================================================================== */
+
+:root {
+    --reader-bg: #fffffb;
+    --reader-paper: #fffffb;
+    --reader-paper-95: rgba(255,255,251,.95);
+    --reader-paper-90: rgba(255,255,251,.90);
+    --reader-paper-85: rgba(255,255,251,.85);
+    --reader-paper-80: rgba(255,255,251,.80);
+    --reader-paper-55: rgba(255,255,251,.55);
+    --reader-paper-30: rgba(255,255,251,.30);
+    --reader-text: #1c1c1a;
+    --reader-text-85: rgba(28,28,26,.85);
+    --reader-text-67: rgba(28,28,26,.67);
+    --reader-muted: #676761;
+    --reader-muted-70: rgba(103,103,97,.70);
+    --reader-faint: #a9a9a0;
+    --reader-line: #cdcdc5;
+    --reader-line-strong: #666660;
+    --reader-marker: #111;
+    --reader-marker-soft: rgba(17,17,17,.20);
+    --reader-shadow: rgba(0,0,0,.12);
+    --reader-thumb-brightness: 1;
+    --reader-thumb-contrast: 1;
+}
+
+/* ---------- continuous tone control ---------- */
+
+.main-reader-tone-control {
+    position: fixed;
+    top: 9px;
+    right: 190px;
+    z-index: 1004;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 30px;
+    color: var(--reader-muted);
+    user-select: none;
+    pointer-events: auto;
+}
+
+.main-reader-tone-icon {
+    width: 12px;
+    text-align: center;
+    font: 300 10px/1 "IBM Plex Mono", "IBM Plex Sans JP", monospace;
+    color: var(--reader-muted);
+    opacity: .62;
+    pointer-events: none;
+}
+
+.main-reader-tone-track-wrap {
+    position: relative;
+    width: 116px;
+    height: 30px;
+    display: grid;
+    align-items: center;
+}
+
+.main-reader-tone-slider {
+    position: relative;
+    z-index: 2;
+    appearance: none;
+    -webkit-appearance: none;
+    width: 116px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    outline: none;
+    cursor: ew-resize !important;
+    pointer-events: auto;
+    touch-action: pan-y;
+}
+
+.main-reader-tone-slider::-webkit-slider-runnable-track {
+    height: 1px;
+    background:
+        linear-gradient(
+            90deg,
+            #bdbdb6 0%,
+            #aa9b7e 45%,
+            #77756d 67%,
+            #343630 100%
+        );
+}
+
+.main-reader-tone-slider::-moz-range-track {
+    height: 1px;
+    border: 0;
+    background:
+        linear-gradient(
+            90deg,
+            #bdbdb6 0%,
+            #aa9b7e 45%,
+            #77756d 67%,
+            #343630 100%
+        );
+}
+
+.main-reader-tone-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 11px;
+    height: 11px;
+    margin-top: -5px;
+    border-radius: 50%;
+    border: 1px solid var(--reader-line-strong);
+    background: var(--reader-paper);
+    box-shadow: 0 0 0 1px var(--reader-shadow);
+}
+
+.main-reader-tone-slider::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid var(--reader-line-strong);
+    background: var(--reader-paper);
+    box-shadow: 0 0 0 1px var(--reader-shadow);
+}
+
+.main-reader-tone-slider.is-dragging::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px var(--reader-shadow);
+}
+
+.main-reader-tone-slider.is-dragging::-moz-range-thumb {
+    box-shadow: 0 0 0 3px var(--reader-shadow);
+}
+
+.main-reader-tone-warm-mark {
+    position: absolute;
+    left: 45%;
+    top: 13px;
+    width: 1px;
+    height: 4px;
+    background: var(--reader-line-strong);
+    opacity: .42;
+    transform: translateX(-.5px);
+    pointer-events: none;
+}
+
+/* ---------- atlas ground / architectural frame ---------- */
+
+html,
+body,
+#map,
+.leaflet-container {
+    background: var(--reader-bg) !important;
+    color: var(--reader-text);
+}
+
+#main-viewport-frame {
+    border-color: var(--reader-line-strong);
+}
+
+.perspective-line line,
+.drawer-perspective-line line,
+#drawer-opened-bottom-decor .drawer-perspective-line line {
+    stroke: var(--reader-line-strong) !important;
+}
+
+#top-title,
+#coords,
+#bottom-labels,
+.bottom-decor-labels,
+.map-init-hint,
+.map-nav-hint,
+#map-dir-hint {
+    color: var(--reader-text-67) !important;
+}
+
+#coords,
+.map-init-hint,
+.map-nav-hint,
+#map-dir-hint {
+    color: var(--reader-muted-70) !important;
+}
+
+/* ---------- multilingual title wheel ---------- */
+
+.wheel-item,
+.wheel-item.active,
+.title-wheel-container:hover .wheel-item.active {
+    color: var(--reader-text) !important;
+    text-shadow: 0 0 9px var(--reader-paper) !important;
+}
+
+.wheel-dot,
+.indicator-row .wheel-dot,
+.indicator-row.active .wheel-dot {
+    background: var(--reader-text) !important;
+}
+
+.wheel-dot.active,
+.indicator-row.active .wheel-dot {
+    box-shadow: 0 0 6px var(--reader-paper) !important;
+}
+
+.indicator-row .wheel-label {
+    color: var(--reader-muted) !important;
+}
+
+/* ---------- map markers / crosshair ---------- */
+
+.garden-dot,
+.record-dot,
+.archive-doc.matched-tag::after,
+.index-tag:hover::after,
+.index-tag.active::after {
+    background: var(--reader-marker) !important;
+    box-shadow: 0 0 2.5px var(--reader-shadow);
+}
+
+.active-marker .garden-dot::before,
+.active-marker .garden-dot::after,
+.active-marker .record-dot::before,
+.active-marker .record-dot::after {
+    background: var(--reader-marker-soft) !important;
+}
+
+/* ---------- Leaflet popup text ---------- */
+
+.archive-content,
+.archive-name {
+    color: var(--reader-text-85) !important;
+}
+
+.archive-coords,
+.archive-date,
+.archive-drawer-link {
+    color: var(--reader-muted) !important;
+}
+
+/* ---------- Archive Doc paper ---------- */
+
+.archive-doc {
+    background: var(--reader-paper) !important;
+    border-color: var(--reader-line-strong) !important;
+    color: var(--reader-text);
+    box-shadow: 0 -4px 10px var(--reader-shadow);
+}
+
+.archive-doc.extracted {
+    background: var(--reader-paper-80) !important;
+}
+
+.archive-doc.extracted .doc-meta,
+.doc-meta {
+    color: var(--reader-muted) !important;
+}
+
+.doc-title {
+    color: var(--reader-text);
+}
+
+.doc-coord-btn {
+    color: var(--reader-text);
+    border-color: var(--reader-text) !important;
+    background: transparent;
+}
+
+.doc-coord-btn:hover,
+.doc-coord-btn.active,
+.archive-doc .doc-title:hover ~ .doc-coord-btn {
+    background: var(--reader-text) !important;
+    color: var(--reader-paper) !important;
+}
+
+.archive-doc-thumbnail,
+.compass-thumbnail-frame {
+    border-color: var(--reader-line-strong) !important;
+    background: var(--reader-paper-55) !important;
+}
+
+.site-preview-thumbnail {
+    /* Authored grayscale photo remains a photo: darken only, never invert. */
+    filter:
+        brightness(var(--reader-thumb-brightness))
+        contrast(var(--reader-thumb-contrast));
+}
+
+/* ---------- Global compass ---------- */
+
+.compass-pentagon-outer::after {
+    border-color: var(--reader-line-strong) !important;
+    background:
+        linear-gradient(
+            to top right,
+            transparent 50%,
+            var(--reader-line-strong) 50%,
+            var(--reader-line-strong) calc(50% + 1.2px),
+            transparent calc(50% + 1.2px)
+        ) !important;
+    background-size: 35px 35px !important;
+    background-position: bottom left !important;
+    background-repeat: no-repeat !important;
+}
+
+.global-compass-module.expanded .global-compass-btn {
+    box-shadow: -1px 0 0 var(--reader-line) !important;
+}
+
+.compass-circle-icon {
+    border-color: var(--reader-muted) !important;
+}
+
+.compass-circle-icon::before,
+.compass-circle-icon::after {
+    background: var(--reader-muted) !important;
+}
+
+.compass-icon-arrow {
+    border-color: var(--reader-muted) !important;
+}
+
+.global-compass-btn:hover .compass-circle-icon,
+.global-compass-module.expanded .compass-circle-icon {
+    border-color: var(--reader-text) !important;
+}
+
+.global-compass-btn:hover .compass-circle-icon::before,
+.global-compass-module.expanded .compass-circle-icon::before,
+.global-compass-btn:hover .compass-circle-icon::after,
+.global-compass-module.expanded .compass-circle-icon::after {
+    background: var(--reader-text) !important;
+}
+
+.global-compass-btn:hover .compass-icon-arrow,
+.global-compass-module.expanded .compass-icon-arrow {
+    border-color: var(--reader-text) !important;
+}
+
+.compass-wheel-item {
+    color: var(--reader-muted-70) !important;
+}
+
+.compass-wheel-item:hover,
+.compass-wheel-item.active {
+    color: var(--reader-text) !important;
+}
+
+/* ---------- lower archive drawers / index ---------- */
+
+#bottom-index-drawer {
+    background: var(--reader-paper-90) !important;
+    color: var(--reader-text);
+}
+
+#index-drawer-handle .frosted-shape,
+#index-drawer-content {
+    background: var(--reader-paper-80) !important;
+    border-color: var(--reader-line-strong) !important;
+}
+
+#drawer-opened-bottom-decor .frosted-shape::before,
+#drawer-opened-bottom-decor .frosted-shape::after {
+    background: var(--reader-paper-85) !important;
+    border-color: var(--reader-line-strong) !important;
+}
+
+.index-top-title,
+.index-three-columns,
+.index-conclusion,
+.archive-index-title,
+.index-row,
+.index-category,
+.index-separator {
+    color: var(--reader-text) !important;
+}
+
+.index-separator,
+.index-three-columns.disabled,
+.index-conclusion.disabled,
+.index-top-title.disabled,
+.index-three-columns.disabled *,
+.index-conclusion.disabled *,
+.index-top-title.disabled * {
+    color: var(--reader-muted) !important;
+}
+
+.index-tag {
+    color: var(--reader-text) !important;
+    border-color: var(--reader-line) !important;
+    background: var(--reader-paper-30) !important;
+    box-shadow: inset 0 1px 0 var(--reader-paper-55),
+                inset 0 -1px 0 var(--reader-shadow) !important;
+}
+
+.index-tag:hover,
+.index-tag.active {
+    background: var(--reader-paper-55) !important;
+    box-shadow: inset 0 0 0 1px var(--reader-line-strong) !important;
+}
+
+#top-title-wrapper .frosted-shape {
+    background: var(--reader-paper-85) !important;
+}
+
+.title-top-line {
+    background: var(--reader-line-strong) !important;
+}
+
+/* Archive detail drawer itself follows the paper environment, while the
+   attachment Viewer below intentionally keeps its authored dark-room style. */
+.drawer.open {
+    color: var(--reader-text);
+    background: var(--reader-paper-85);
+    border: 1px solid var(--reader-line-strong);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+.drawer-close,
+.drawer-site-title,
+.drawer-desc,
+.drawer-section-title,
+.tree-file,
+.tree-folder,
+.attachment-item {
+    color: var(--reader-text);
+}
+
+/* ---------- mobile archive drawers ---------- */
+
+.mobile-side-drawer::after {
+    background: var(--reader-paper-85) !important;
+}
+
+.mobile-list-item {
+    color: var(--reader-text-85) !important;
+}
+
+/* Do not theme the actual attachment viewing surface or media content.
+   On phones the viewer has its own authored layout and remains untouched. */
+
+/* ---------- responsive control ---------- */
+
+@media (max-width: 1100px) {
+    .main-reader-tone-control {
+        right: 40px;
+    }
+}
+
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    .main-reader-tone-control {
+        display: none !important;
+    }
+}
+
+
+/* ==========================================================================
+   v78 · Archive Drawer: return to the lighter pre-v77 character
+   --------------------------------------------------------------------------
+   No blur, no border.  A very light themed paper wash plus brightness /
+   contrast keeps the text readable while the atlas remains visible behind it.
+   ========================================================================== */
+
+.drawer.open {
+    background: transparent !important;
+    border: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* The wash lives behind drawer content so text/media remain crisp. */
+.drawer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+
+    background: var(--reader-paper-30);
+    backdrop-filter: brightness(1.07) contrast(1.035);
+    -webkit-backdrop-filter: brightness(1.07) contrast(1.035);
+}
+
+.drawer-inner,
+.drawer-close {
+    position: relative;
+    z-index: 1;
+}
+
+
+/* ==========================================================================
+   v79 · Drawer close / tree lines / mechanical index keys
+   ========================================================================== */
+
+/* v78 accidentally changed .drawer-close to position:relative.
+   Restore the original authored top-right close control. */
+.drawer-inner {
+    position: relative;
+    z-index: 1;
+}
+
+.drawer-close {
+    position: absolute !important;
+    top: 12px !important;
+    right: 14px !important;
+    left: auto !important;
+    bottom: auto !important;
+    z-index: 20 !important;
+}
+
+/* ---------- archive-tree branch glyphs ---------- */
+/* These ╲ / ╱ / ├── / └── pieces had hard-coded black color in the old
+   archive CSS.  They now follow the reading environment. */
+.archive-tree,
+.archive-tree .fault-node,
+.archive-tree .tree-file,
+.archive-tree .tree-folder,
+.archive-tree .tree-toggle,
+.archive-tree .tree-folder-toggle,
+.archive-tree .tree-line,
+.archive-tree .fault-line,
+.archive-tree .fault-line-a,
+.archive-tree .fault-line-b,
+.archive-tree .fault-line-c,
+.archive-tree .fault-line-d,
+.archive-tree .line-1,
+.archive-tree .line-2,
+.archive-tree .line-3,
+.archive-tree .line-4,
+.archive-tree .line-5 {
+    color: var(--reader-text) !important;
+}
+
+/* Slightly soften pure connector glyphs while keeping them visible in night. */
+.archive-tree .fault-line,
+.archive-tree .fault-line-a,
+.archive-tree .fault-line-b,
+.archive-tree .fault-line-c,
+.archive-tree .fault-line-d,
+.archive-tree .line-1,
+.archive-tree .line-2,
+.archive-tree .line-3,
+.archive-tree .line-4,
+.archive-tree .line-5,
+.archive-tree .tree-line {
+    opacity: .72;
+}
+
+/* ---------- restore v14/v19 "minesweeper" index keys ---------- */
+:root {
+    --reader-mine-face: rgba(224,224,219,.48);
+    --reader-mine-hover: rgba(235,235,231,.68);
+    --reader-mine-active: rgba(211,211,206,.54);
+    --reader-mine-hi: rgba(255,255,255,.98);
+    --reader-mine-lo: rgba(82,82,78,.58);
+    --reader-mine-active-hi: rgba(0,0,0,.30);
+    --reader-mine-active-lo: rgba(255,255,255,.94);
+}
+
+.index-tag {
+    color: var(--reader-text-85) !important;
+    background: var(--reader-mine-face) !important;
+
+    border-top: 1px solid var(--reader-mine-hi) !important;
+    border-left: 1px solid var(--reader-mine-hi) !important;
+    border-right: 1px solid var(--reader-mine-lo) !important;
+    border-bottom: 1px solid var(--reader-mine-lo) !important;
+
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+
+    transition:
+        background .08s linear,
+        border-color .08s linear,
+        color .08s linear !important;
+}
+
+.index-tag:hover {
+    color: var(--reader-text) !important;
+    background: var(--reader-mine-hover) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.index-tag.active {
+    color: var(--reader-text) !important;
+    background: var(--reader-mine-active) !important;
+
+    /* pressed key: reverse the bevel */
+    border-top-color: var(--reader-mine-active-hi) !important;
+    border-left-color: var(--reader-mine-active-hi) !important;
+    border-right-color: var(--reader-mine-active-lo) !important;
+    border-bottom-color: var(--reader-mine-active-lo) !important;
+
+    box-shadow: inset 1px 1px 0 var(--reader-shadow) !important;
+    transform: none !important;
+}
+
