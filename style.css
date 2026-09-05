@@ -6105,3 +6105,708 @@ body,
     transform: none !important;
 }
 
+
+
+/* ==========================================================================\n   v82 · Ruin Lexicology index introduction / compact drawer prose\n   ========================================================================== */
+#index-drawer-content {
+    padding-top: 34px;
+    padding-bottom: 20px;
+}
+.index-top-title {
+    margin-top: -10px;
+    margin-bottom: 6px;
+}
+.index-three-columns {
+    line-height: 1.82;
+    margin-bottom: 5px;
+}
+.index-conclusion { margin-bottom: 10px; }
+.index-manifesto-crossref { margin-bottom: 10px; }
+.archive-index-system {
+    padding-top: 10px;
+    gap: 11px 22px;
+}
+.archive-index-title { margin-bottom: -2px; }
+.index-lexicology-intro {
+    flex: 0 0 100%;
+    width: min(860px, 88%);
+    margin: -1px auto 4px;
+    color: var(--reader-muted);
+    text-align: center;
+    font: 300 10.5px/1.65 "IBM Plex Sans JP", sans-serif;
+    letter-spacing: .18px;
+}
+html[data-lang="en"] .index-lexicology-intro {
+    width: min(980px, 92%);
+    font-size: 10px;
+    line-height: 1.6;
+}
+@media (max-width: 1100px) {
+    #index-drawer-content { padding-top: 18px !important; padding-bottom: 24px !important; }
+    .index-top-title { margin-top: -8px !important; margin-bottom: 5px !important; }
+    .index-three-columns { margin-bottom: 5px !important; }
+    .index-conclusion, .index-manifesto-crossref { margin-bottom: 8px !important; }
+    .index-lexicology-intro { width: 94%; margin-bottom: 3px; font-size: 9.5px; line-height: 1.55; }
+}
+@media (max-width: 768px) {
+    #index-drawer-content { padding-top: 12px !important; padding-bottom: 22px !important; }
+    .index-top-title { margin-top: -6px !important; }
+    .index-three-columns { line-height: 1.68 !important; margin-bottom: 4px !important; }
+    .index-conclusion, .index-manifesto-crossref { margin-bottom: 7px !important; }
+    .archive-index-system { padding-top: 7px !important; gap: 7px 10px !important; }
+    .index-lexicology-intro { width: 100%; margin: 0 auto 2px; font-size: 9px; line-height: 1.5; text-align: left; }
+}
+
+
+/* ==========================================================================
+   v83 · tighter index-drawer prose rhythm
+   ========================================================================== */
+
+#index-drawer-content {
+    padding-top: 18px !important;
+    padding-bottom: 16px !important;
+}
+
+.index-top-title {
+    margin-top: -16px !important;
+    margin-bottom: 3px !important;
+    line-height: 1.58 !important;
+}
+
+.index-three-columns {
+    line-height: 1.58 !important;
+    margin-top: 0 !important;
+    margin-bottom: 3px !important;
+}
+
+.index-conclusion {
+    line-height: 1.58 !important;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+}
+
+.index-manifesto-crossref {
+    margin-top: -1px !important;
+    margin-bottom: 7px !important;
+}
+
+.index-manifesto-link {
+    line-height: 1.25 !important;
+}
+
+.archive-index-system {
+    padding-top: 6px !important;
+    gap: 9px 22px !important;
+}
+
+.archive-index-title {
+    margin-bottom: -3px !important;
+}
+
+.index-lexicology-intro {
+    width: min(820px, 86%) !important;
+    margin: -2px auto 2px !important;
+    font-size: 10px !important;
+    line-height: 1.52 !important;
+    letter-spacing: .12px !important;
+}
+
+#archive-add-link {
+    color: var(--reader-text-67) !important;
+}
+
+#archive-add-link:hover,
+#archive-add-link:focus-visible {
+    color: var(--reader-text) !important;
+}
+
+@media (max-width: 1100px) {
+    #index-drawer-content {
+        padding-top: 10px !important;
+        padding-bottom: 18px !important;
+    }
+
+    .index-top-title {
+        margin-top: -12px !important;
+        margin-bottom: 3px !important;
+        line-height: 1.55 !important;
+    }
+
+    .index-three-columns,
+    .index-conclusion {
+        line-height: 1.55 !important;
+        margin-bottom: 3px !important;
+    }
+
+    .index-conclusion {
+        margin-bottom: 2px !important;
+    }
+
+    .index-manifesto-crossref {
+        margin-top: -1px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .archive-index-system {
+        padding-top: 5px !important;
+        gap: 8px 14px !important;
+    }
+
+    .index-lexicology-intro {
+        width: 92% !important;
+        margin-bottom: 2px !important;
+        font-size: 9.4px !important;
+        line-height: 1.48 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #index-drawer-content {
+        padding-top: 8px !important;
+        padding-bottom: 18px !important;
+    }
+
+    .index-top-title {
+        margin-top: -8px !important;
+        margin-bottom: 3px !important;
+        line-height: 1.5 !important;
+    }
+
+    .index-three-columns,
+    .index-conclusion {
+        line-height: 1.5 !important;
+        margin-bottom: 3px !important;
+    }
+
+    .index-conclusion {
+        margin-bottom: 2px !important;
+    }
+
+    .index-manifesto-crossref {
+        margin: -1px 0 5px !important;
+    }
+
+    .archive-index-system {
+        padding-top: 4px !important;
+        gap: 6px 10px !important;
+    }
+
+    .index-lexicology-intro {
+        width: 100% !important;
+        margin: -1px 0 2px !important;
+        font-size: 8.8px !important;
+        line-height: 1.45 !important;
+        text-align: left !important;
+    }
+}
+
+
+/* ==========================================================================
+   v84 · Index manifesto breathing room
+   ========================================================================== */
+
+.index-manifesto-crossref {
+    margin-bottom: 32px !important;
+}
+
+@media (max-width: 1100px) {
+    .index-manifesto-crossref {
+        margin-bottom: 31px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .index-manifesto-crossref {
+        margin-bottom: 30px !important;
+    }
+}
+
+
+/* ==========================================================================
+   v85 · unified preface typography + divider before Ruin Lexicology
+   ========================================================================== */
+
+/* Use [添加档案] as the typographic reference:
+   14px / 300 / 1px letter-spacing / IBM Plex Sans JP. */
+.index-top-title,
+.index-three-columns,
+.index-conclusion,
+.index-lexicology-intro,
+.index-manifesto-link {
+    font-family: "IBM Plex Sans JP", sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 300 !important;
+    letter-spacing: 1px !important;
+}
+
+.index-top-title,
+.index-three-columns,
+.index-conclusion {
+    line-height: 1.58 !important;
+}
+
+/* Manifesto link visually follows [添加档案]. */
+.index-manifesto-link {
+    color: var(--reader-text-67) !important;
+    line-height: 1.35 !important;
+    opacity: 1 !important;
+    text-decoration: none !important;
+    transition: color .16s ease, font-weight .12s linear !important;
+}
+
+.index-manifesto-link:hover,
+.index-manifesto-link:focus-visible {
+    color: var(--reader-text) !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px !important;
+    text-decoration: none !important;
+}
+
+/* Preserve the extra space requested below the Manifesto link. */
+.index-manifesto-crossref {
+    margin-bottom: 32px !important;
+}
+
+/* Separator between the introductory prose and the self-authored lexicology. */
+.index-items {
+    position: relative;
+    width: 100%;
+    padding-top: 17px;
+    margin-top: 0;
+    border-top: 1px solid var(--reader-line);
+}
+
+/* More air above and below the short lexicology explanation. */
+.archive-index-title {
+    margin-bottom: 8px !important;
+}
+
+.index-lexicology-intro {
+    width: min(900px, 90%) !important;
+    margin: 0 auto 15px !important;
+    color: var(--reader-text-67) !important;
+    line-height: 1.58 !important;
+    text-align: center !important;
+}
+
+.archive-index-system {
+    padding-top: 0 !important;
+}
+
+@media (max-width: 1100px) {
+    .index-top-title,
+    .index-three-columns,
+    .index-conclusion,
+    .index-lexicology-intro,
+    .index-manifesto-link {
+        font-size: 12px !important;
+        letter-spacing: .7px !important;
+    }
+
+    .index-top-title,
+    .index-three-columns,
+    .index-conclusion,
+    .index-lexicology-intro {
+        line-height: 1.55 !important;
+    }
+
+    .index-manifesto-crossref {
+        margin-bottom: 31px !important;
+    }
+
+    .index-items {
+        padding-top: 15px;
+    }
+
+    .archive-index-title {
+        margin-bottom: 7px !important;
+    }
+
+    .index-lexicology-intro {
+        width: 94% !important;
+        margin: 0 auto 13px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .index-top-title,
+    .index-three-columns,
+    .index-conclusion,
+    .index-lexicology-intro,
+    .index-manifesto-link {
+        font-size: 10px !important;
+        letter-spacing: .35px !important;
+    }
+
+    .index-top-title,
+    .index-three-columns,
+    .index-conclusion,
+    .index-lexicology-intro {
+        line-height: 1.5 !important;
+    }
+
+    .index-manifesto-crossref {
+        margin-bottom: 30px !important;
+    }
+
+    .index-items {
+        padding-top: 13px;
+    }
+
+    .archive-index-title {
+        margin-bottom: 6px !important;
+    }
+
+    .index-lexicology-intro {
+        width: 100% !important;
+        margin: 0 0 11px !important;
+        text-align: left !important;
+    }
+}
+
+
+/* ==========================================================================
+   v86 · soften secondary index information
+   ========================================================================== */
+
+/* Remove the v85 separator completely. */
+.index-items {
+    border-top: 0 !important;
+    padding-top: 8px !important;
+}
+
+/* Keep the main introduction larger; make the lexicology note secondary. */
+.index-lexicology-intro {
+    font-size: 11px !important;
+    font-weight: 300 !important;
+    letter-spacing: .45px !important;
+    line-height: 1.55 !important;
+    margin: 0 auto 13px !important;
+    color: var(--reader-text-67) !important;
+}
+
+/* The two bracket-style links form one small secondary-navigation layer. */
+.index-manifesto-link,
+#archive-add-link {
+    font-family: "IBM Plex Sans JP", sans-serif !important;
+    font-size: 11px !important;
+    font-weight: 300 !important;
+    letter-spacing: .55px !important;
+    line-height: 1.35 !important;
+    color: var(--reader-text-67) !important;
+    text-decoration: none !important;
+}
+
+.index-manifesto-link:hover,
+.index-manifesto-link:focus-visible,
+#archive-add-link:hover,
+#archive-add-link:focus-visible {
+    color: var(--reader-text) !important;
+    font-weight: 500 !important;
+    letter-spacing: .55px !important;
+    text-decoration: none !important;
+}
+
+/* Keep the breathing room under the Manifesto link from v84/v85. */
+.index-manifesto-crossref {
+    margin-bottom: 32px !important;
+}
+
+@media (max-width: 1100px) {
+    .index-items {
+        padding-top: 7px !important;
+    }
+
+    .index-lexicology-intro,
+    .index-manifesto-link,
+    #archive-add-link {
+        font-size: 10px !important;
+        letter-spacing: .4px !important;
+    }
+
+    .index-lexicology-intro {
+        margin-bottom: 12px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .index-items {
+        padding-top: 6px !important;
+    }
+
+    .index-lexicology-intro,
+    .index-manifesto-link,
+    #archive-add-link {
+        font-size: 9px !important;
+        letter-spacing: .25px !important;
+    }
+
+    .index-lexicology-intro {
+        margin-bottom: 10px !important;
+    }
+}
+
+
+/* ==========================================================================
+   v88 · Index heading hierarchy
+   --------------------------------------------------------------------------
+   「遗构馆」 is the reference for weight + transparency.
+   Keep each heading's existing size/spacing, but unify its typographic tone.
+   ========================================================================== */
+
+.archive-index-title,
+.index-category {
+    font-family: "IBM Plex Sans JP", sans-serif !important;
+    font-weight: 400 !important;
+    color: var(--reader-text-67) !important;
+    opacity: 1 !important;
+}
+
+/* Keep the four category labels equally quiet and stable on hover/filter. */
+.index-category,
+.index-category:hover,
+.index-category.active,
+.index-category.disabled {
+    font-weight: 400 !important;
+    color: var(--reader-text-67) !important;
+}
+
+/* The lexicology title keeps its existing larger scale, while sharing the
+   same visual density as 遗构馆 and the category headings. */
+.archive-index-title {
+    color: var(--reader-text-67) !important;
+    font-weight: 400 !important;
+}
+
+/* The explanatory note stays secondary to the headings. */
+.index-lexicology-intro {
+    color: var(--reader-text-67) !important;
+    opacity: .88;
+}
+
+
+/* ==========================================================================
+   v89 · Ruin Garden archive-doc: dedicated 256×256 thumbnail specimen
+   --------------------------------------------------------------------------
+   This is intentionally isolated from:
+     - ordinary Record archive-doc thumbnails (90×90 display)
+     - Global Compass thumbnails (90×90 display)
+   ========================================================================== */
+
+/* The archive sheet's total outer width is 266px (240 + 12 + 12 + borders).
+   A 256px image with 4px padding fits the paper exactly without changing the
+   authored archive-doc width. */
+#stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail {
+    width: 256px !important;
+    height: 256px !important;
+    padding: 4px !important;
+    box-sizing: content-box !important;
+}
+
+#stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail .site-preview-thumbnail {
+    width: 256px !important;
+    height: 256px !important;
+    flex: 0 0 256px !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+}
+
+/* Keep the large specimen visually attached to the title without using the
+   90px archive-doc spacing as-is. */
+#stack-garden .archive-doc.garden-large-thumbnail.extracted .doc-title {
+    margin-bottom: 18px !important;
+}
+
+#stack-garden .archive-doc.garden-large-thumbnail.extracted .archive-doc-thumbnail {
+    margin-bottom: 22px !important;
+}
+
+/* The larger preview needs the right-hand sheet a little higher than the 90px
+   version. This does NOT change the left Record sheet's v54 reference point. */
+#stack-garden.position-right {
+    --garden-extract-top: -410px;
+    --record-reference-garden-extract-top: -233px;
+}
+
+/* Compact layouts should never inherit the desktop 256px specimen sizing. */
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    #stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail,
+    #stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail .site-preview-thumbnail {
+        width: 90px !important;
+        height: 90px !important;
+        flex-basis: 90px !important;
+    }
+
+    #stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail {
+        padding: 5px !important;
+    }
+}
+
+
+/* ==========================================================================
+   v90 · Ruin Garden archive-doc thumbnail correction
+   --------------------------------------------------------------------------
+   Garden archive-doc remains a special case, but 256×256 was too dominant.
+   Final display size: 128×128.
+   Compass and ordinary Record archive-doc remain 90×90.
+   ========================================================================== */
+
+#stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail {
+    width: 128px !important;
+    height: 128px !important;
+    padding: 5px !important;
+    box-sizing: content-box !important;
+}
+
+#stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail .site-preview-thumbnail {
+    width: 128px !important;
+    height: 128px !important;
+    flex: 0 0 128px !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+}
+
+#stack-garden .archive-doc.garden-large-thumbnail.extracted .doc-title {
+    margin-bottom: 22px !important;
+}
+
+#stack-garden .archive-doc.garden-large-thumbnail.extracted .archive-doc-thumbnail {
+    margin-bottom: 26px !important;
+}
+
+/* 128px needs only a modest lift compared with the normal 90px record card. */
+#stack-garden.position-right {
+    --garden-extract-top: -350px;
+    --record-reference-garden-extract-top: -233px;
+}
+
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    #stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail,
+    #stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail .site-preview-thumbnail {
+        width: 90px !important;
+        height: 90px !important;
+        flex-basis: 90px !important;
+    }
+
+    #stack-garden .archive-doc.garden-large-thumbnail .archive-doc-thumbnail {
+        padding: 5px !important;
+    }
+}
+
+
+/* ==========================================================================
+   v91 · English Ruin Lexicology: Latin / Greek root layer
+   ========================================================================== */
+
+.archive-index-heading-row {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    min-height: 22px;
+}
+
+.archive-index-heading-row .archive-index-title {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.index-lexicon-toggle {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    padding: 2px 0;
+    margin: 0;
+    background: transparent;
+
+    font-family: "IBM Plex Mono", "IBM Plex Sans JP", monospace;
+    font-size: 9px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: .35px;
+
+    color: var(--reader-text-67);
+    cursor: pointer;
+    opacity: .72;
+}
+
+.index-lexicon-toggle:hover,
+.index-lexicon-toggle:focus-visible {
+    color: var(--reader-text);
+    opacity: 1;
+    outline: none;
+}
+
+.index-lexicon-toggle[hidden] {
+    display: none !important;
+}
+
+/* Root mode reads as an etymological/morphemic layer rather than ordinary
+   English labels. Filtering, hit areas and minesweeper bevels are unchanged. */
+html[lang="en"] .index-tag.root-lexeme {
+    font-family: "IBM Plex Mono", "IBM Plex Sans JP", monospace !important;
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    letter-spacing: .25px !important;
+    text-transform: lowercase;
+}
+
+/* Make room for slightly longer combining forms without changing row height. */
+html[lang="en"] .index-tags-container {
+    column-gap: 4px;
+}
+
+@media (max-width: 1100px) {
+    .index-lexicon-toggle {
+        right: 2px;
+        font-size: 8px;
+    }
+
+    html[lang="en"] .index-tag.root-lexeme {
+        font-size: 10px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .archive-index-heading-row {
+        justify-content: flex-start;
+    }
+
+    .archive-index-heading-row .archive-index-title {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .index-lexicon-toggle {
+        position: static;
+        transform: none;
+        margin-left: 10px;
+        font-size: 8px;
+    }
+
+    html[lang="en"] .index-tag.root-lexeme {
+        font-size: 9px !important;
+    }
+}
+
+
+/* ==========================================================================
+   v92 · root layer correctness
+   ========================================================================== */
+
+/* Root strings themselves already carry their intended lowercase form.
+   No text-transform is needed; this prevents ordinary English labels from
+   merely looking like roots if a language transition is still finishing. */
+html[lang="en"] .index-tag.root-lexeme {
+    text-transform: none !important;
+}

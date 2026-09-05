@@ -2279,6 +2279,67 @@ function createAttachmentRegistry() {
         src: 'attachments/castle/photo-1.jpg',
         desc: 'desc_recorded_2025_01_27'
     },
+    'castle-2': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-2.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-3': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-3.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-4': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-4.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-5': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-5.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-6': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-6.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-7': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-7.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-8': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-8.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'castle-9': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/castle/photo-9.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+
+    'grassdwelling-01': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/grass-child-dwelling/photo-1.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
+    'grassdwelling-02': {
+        title: 'specimen_visual',
+        mode: 'image',
+        src: 'attachments/grass-child-dwelling/photo-2.jpg',
+        desc: 'desc_recorded_2026_09_05'
+    },
 
 
     'earthwall-01': {
@@ -3845,6 +3906,9 @@ const drawer = document.getElementById('archive-drawer');
     const isCompressedCourtyard =
         site.name === "褶脊胚庭";
 
+    const isGrassChildDwelling =
+        site.name === "草间稚居";
+
 
     const currentSiteName = site.name;
     const siteTags = siteTagsMapping[currentSiteName] || "";
@@ -4282,6 +4346,15 @@ else if (isAquarium) {
         treeHTML =
             buildArchiveTree(
                 'compressed',
+                '遗构录'
+            );
+
+    }
+    else if (isGrassChildDwelling) {
+
+        treeHTML =
+            buildArchiveTree(
+                'grassdwelling',
                 '遗构录'
             );
 
@@ -5067,7 +5140,7 @@ const siteTagsMapping = {
     "波蚀脊堤": "water, wave, eroded, shore",
     "曜原驿": "desolate, plateau, dwelling",
     "溶境遗廊": "water, corridor, room, tunnel, stair",
-    "荒娱敖包": "desolate, relocated, slope, monument",
+    "荒娱敖包": "desolate, relocated, slope, monument, placed",
     "削岩残居": "ruin, dwelling, slope, stair",
     "彩壳堡": "fort, tower, plateau",
     "迁痕空埠": "relocated, port",
@@ -5075,7 +5148,8 @@ const siteTagsMapping = {
     "山融灶垣": "slope, soil, eroded, wall, sacred",
     "崖隐蚀垣": "soil, mountain, slope, wall, eroded, cliff, chamber, sacred",
     "暮辉骸殿": "rail, fort, remains, hall",
-    "褶脊胚庭": "courtyard, wall, tree, compressed, valley"
+    "褶脊胚庭": "courtyard, wall, tree, compressed, interstitial",
+    "草间稚居": "placed, grass, interstitial, dwelling"
 };
 
 function createSiteMarker(site) {
@@ -5318,7 +5392,7 @@ const sites = [
     },
     {
         name: "彩壳堡",
-        desc: "农田之上矗立着一座未完成的城堡。混凝土与钢筋仍裸露于外，外墙却已涂满鲜艳的色彩。童话比建筑更早完成，也比建筑更早荒废。",
+        desc: "农田之上矗立着一座未完成的城堡。混凝土与钢筋仍裸露于外，外墙却早已涂满鲜艳的色彩。围墙的砖块陆续脱落，藏在墙体里的粗糙承重柱一根根显露出来，童话的外壳开始退回到结构本身。似乎后来来到这里涂鸦的人也继承了城堡的浪漫：墙上出现了长出腿脚的动物和形状怪异的小人，原本属于花纹与装饰的位置逐渐被杂乱的线条占据，想象中的皇室也被这些无名角色取代。童话比建筑更早完成，也比建筑更早荒废；如今，一群由涂鸦临时续写的居民正在占据这座空壳。",
                 lat: 40.2368611,
                     lng: 116.1637500,
                         archiveDate: "2025.01",
@@ -5397,6 +5471,15 @@ const sites = [
         archiveDate: "2026.08",
         recorder: "Suni",
         visitMode: "pilgrimage",
+        type: "record"
+    },
+    {
+        name: "草间稚居",
+        desc: "我住在这块空地附近，经常从这里经过。原有的住宅被拆除后，地块空置了很久，杂草一点点从边缘向中央蔓延。一场雨后，我忽然发现草地中央多出了一栋小屋：红色屋顶、白色墙面、粉色小门，应该是孩子玩过家家留下的塑料屋。它没有像废弃物那样倒在角落，反而异常端正地立在空地中央，正面朝外，像是认真选择了这里作为自己的地址。杂草越长越高，小屋反而越来越像一栋真正的建筑。红色屋顶从高耸的杂草间顶出来，使这件轻薄的塑料玩具意外显出一种近乎厚重的存在感。我举起相机时，附近那只经常见到的猫正好从草丛里走出来。它看了看我，又看了看小屋，像是在打量这个刚刚搬进自己领地的新邻居。",
+        lat: 35.7342317,
+        lng: 139.7346722,
+        archiveDate: "2026.09",
+        recordDate: "2026.09.05",
         type: "record"
     }
 ];
@@ -7634,6 +7717,11 @@ function retractArchiveDocSmooth(docEl) {
 // Images are requested only when an archive sheet is actually extracted or
 // when the expanded compass settles on a site.
 // ============================================================================
+const GARDEN_ARCHIVE_THUMBNAILS = Object.freeze({
+    "瘟猪坝沉墟": "thumbnails/garden-128/effluent-sedimentation.webp",
+    "电台路焦土": "thumbnails/garden-128/aether-scorched-earth.webp"
+});
+
 const SITE_THUMBNAILS = Object.freeze({
     "瘟猪坝沉墟": "thumbnails/effluent-sedimentation.webp",
     "电台路焦土": "thumbnails/aether-scorched-earth.webp",
@@ -7667,19 +7755,25 @@ const SITE_THUMBNAILS = Object.freeze({
     "山骸窟殿": "thumbnails/phospho.webp",
     "山融灶垣": "thumbnails/earthwall.webp",
     "崖隐蚀垣": "thumbnails/cliff-granary.webp",
-    "褶脊胚庭": "thumbnails/compressed-courtyard.webp"
+    "褶脊胚庭": "thumbnails/compressed-courtyard.webp",
+    "草间稚居": "thumbnails/grass-child-dwelling.webp"
 });
 
-function getThumbnailSite(siteOrSites) {
+function getThumbnailSite(siteOrSites, sourceMap = SITE_THUMBNAILS) {
     const list = Array.isArray(siteOrSites) ? siteOrSites : [siteOrSites];
-    return list.find(site => site?.name && SITE_THUMBNAILS[site.name]) || null;
+    return list.find(site => site?.name && sourceMap[site.name]) || null;
 }
 
-function mountStaticThumbnail(frame, site) {
+function mountStaticThumbnail(
+    frame,
+    site,
+    sourceMap = SITE_THUMBNAILS,
+    authoredSize = 128
+) {
     if (!frame) return;
 
-    const thumbnailSite = getThumbnailSite(site);
-    const src = thumbnailSite ? SITE_THUMBNAILS[thumbnailSite.name] : '';
+    const thumbnailSite = getThumbnailSite(site, sourceMap);
+    const src = thumbnailSite ? sourceMap[thumbnailSite.name] : '';
 
     if (!src) {
         frame.replaceChildren();
@@ -7702,8 +7796,8 @@ function mountStaticThumbnail(frame, site) {
     const img = new Image();
     img.className = 'site-preview-thumbnail';
     img.alt = '';
-    img.width = 128;
-    img.height = 128;
+    img.width = authoredSize;
+    img.height = authoredSize;
     img.decoding = 'async';
     img.loading = 'eager';
     img.fetchPriority = 'low';
@@ -7747,7 +7841,7 @@ function buildFileStacks() {
             const initialSite = entrySites[0];
             const isCombinedRecord = !isGarden && entrySites.length > 1;
             const docEl = document.createElement('div');
-            docEl.className = `archive-doc${isCombinedRecord ? ' combined-record-doc' : ''}`;
+            docEl.className = `archive-doc${isGarden ? ' garden-archive-doc' : ''}${isCombinedRecord ? ' combined-record-doc' : ''}`;
             if (isCombinedRecord) docEl.dataset.archiveGroup = entry.group.id;
 
             const tags = isGarden ? (siteTagsMapping[initialSite.name] || '') : unionSiteTags(entrySites);
@@ -7781,10 +7875,23 @@ function buildFileStacks() {
             const uniqueRecorders = [...new Set(entrySites.map(site => site.recorder || '罗清源'))];
             const recorderText = uniqueRecorders.join(' / ');
             const secondaryRecordHtml = isGarden ? '' : buildArchiveDocSecondaryRecords(entrySites);
-            const thumbnailSite = getThumbnailSite(entrySites);
+
+            // v90: Ruin Garden archive-doc cards use a separate
+            // thumbnail source set, displayed at 128×128. Compass and ordinary Record cards
+            // continue using SITE_THUMBNAILS unchanged.
+            const thumbnailSourceMap = isGarden
+                ? GARDEN_ARCHIVE_THUMBNAILS
+                : SITE_THUMBNAILS;
+            const thumbnailAuthoredSize = 128;
+            const thumbnailSite = getThumbnailSite(entrySites, thumbnailSourceMap);
+
             if (thumbnailSite) {
                 docEl.classList.add('has-thumbnail');
                 docEl.dataset.thumbnailSite = thumbnailSite.name;
+
+                if (isGarden) {
+                    docEl.classList.add('garden-large-thumbnail');
+                }
             }
 
             const titleTextHtml = isGarden
@@ -7875,7 +7982,9 @@ function buildFileStacks() {
                 if (thumbnailSite) {
                     mountStaticThumbnail(
                         docEl.querySelector('.archive-doc-thumbnail'),
-                        thumbnailSite
+                        thumbnailSite,
+                        thumbnailSourceMap,
+                        thumbnailAuthoredSize
                     );
                 }
 

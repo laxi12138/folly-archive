@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css?v=79" />
+    <link rel="stylesheet" href="style.css?v=92" />
 
 </head>
 
@@ -422,7 +422,7 @@
     <div id="drawer-mask" class="drawer-mask"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="script.js?v=79"></script>
+    <script src="script.js?v=92"></script>
 
     <div id="mobile-left-drawer" class="mobile-side-drawer">
         <div class="mobile-drawer-content" id="mobile-record-list"></div>
@@ -496,7 +496,17 @@
             </div>
             <div class="index-items">
                 <div class="archive-index-system">
-                    <div class="archive-index-title" data-i18n="index_title">— 索引 —</div>
+                    <div class="archive-index-heading-row">
+                        <div class="archive-index-title" data-i18n="index_title">— 墟语学索引 —</div>
+                        <button
+                            id="index-lexicon-toggle"
+                            class="index-lexicon-toggle"
+                            type="button"
+                            aria-label="Switch Ruin Lexicology vocabulary"
+                            title="Latin / Greek roots"
+                        >[LAT·GR]</button>
+                    </div>
+                    <p class="index-lexicology-intro" data-i18n="index_lexicology_intro">「墟语学」是墟构师自创的废墟分类法，它将现场征候转化为语素，并连接具有共同征候的遗构。</p>
 
                     <div class="index-row">
                         <div class="index-category" data-tag="land" data-i18n="cat_land">土地</div>
@@ -553,6 +563,8 @@
                             <span class="index-tag" data-tag="compressed" data-i18n="tag_compressed">压</span>
                             <span class="index-tag" data-tag="seepage" data-i18n="tag_seepage">渗</span>
                             <span class="index-tag" data-tag="contaminated" data-i18n="tag_contaminated">染</span>
+                            <span class="index-tag" data-tag="placed" data-i18n="tag_placed">置</span>
+                            <span class="index-tag" data-tag="interstitial" data-i18n="tag_interstitial">间</span>
                         </div>
                     </div>
 
@@ -563,6 +575,7 @@
                             <span class="index-tag" data-tag="vine" data-i18n="tag_vine">蔓</span>
                             <span class="index-tag" data-tag="moss" data-i18n="tag_moss">苔</span>
                             <span class="index-tag" data-tag="tree" data-i18n="tag_tree">木</span>
+                            <span class="index-tag" data-tag="grass" data-i18n="tag_grass">草</span>
                             <span class="index-tag" data-tag="spike" data-i18n="tag_spike">棘</span>
                             <span class="index-tag" data-tag="ash" data-i18n="tag_ash">灰</span>
                             <span class="index-tag" data-tag="membrane" data-i18n="tag_membrane">膜</span>
@@ -580,7 +593,189 @@
 
 
     <!-- I18n -->
-    <script>const languageVault = {
+    
+<script>
+/* ==========================================================================
+   v91 · Ruin Lexicology etymon layer
+   --------------------------------------------------------------------------
+   English has two display layers:
+     roots   = Latin / Greek-derived combining roots (default)
+     english = the readable English field lexicon from v81+
+
+   The data-tag values and filtering logic never change.
+   ========================================================================== */
+const RUIN_ROOT_LEXICON = Object.freeze({
+    tag_mountain:     { root: 'mont-',      source: 'Latin', english: 'Montane' },
+    tag_slope:        { root: 'cliv-',      source: 'Latin', english: 'Slope' },
+    tag_shore:        { root: 'littor-',    source: 'Latin', english: 'Littoral' },
+    tag_bay:          { root: 'sinus-',     source: 'Latin', english: 'Embayment' },
+    tag_port:         { root: 'port-',      source: 'Latin', english: 'Port' },
+    tag_plateau:      { root: 'plani-',     source: 'Latin', english: 'Tableland' },
+    tag_valley:       { root: 'vall-',      source: 'Latin', english: 'Valley' },
+    tag_cliff:        { root: 'rup-',       source: 'Latin', english: 'Cliff' },
+
+    tag_corridor:     { root: 'portic-',    source: 'Latin', english: 'Gallery' },
+    tag_stair:        { root: 'grad-',      source: 'Latin', english: 'Stair' },
+    tag_room:         { root: 'aula-',      source: 'Greek', english: 'Hall' },
+    tag_dwelling:     { root: 'dom-',       source: 'Latin', english: 'Dwelling' },
+    tag_wall:         { root: 'mur-',       source: 'Latin', english: 'Wall' },
+    tag_fort:         { root: 'castell-',   source: 'Latin', english: 'Fortification' },
+    tag_hall:         { root: 'palat-',     source: 'Latin', english: 'Palace' },
+    tag_sacred:       { root: 'sacr-',      source: 'Latin', english: 'Sanctuary' },
+    tag_tower:        { root: 'turr-',      source: 'Latin', english: 'Tower' },
+    tag_tunnel:       { root: 'via-',       source: 'Latin', english: 'Passage' },
+    tag_column:       { root: 'styl-',      source: 'Greek', english: 'Column' },
+    tag_factory:      { root: 'erg-',       source: 'Greek', english: 'Works' },
+    tag_vessel:       { root: 'nav-',       source: 'Latin', english: 'Vessel' },
+    tag_rail:         { root: 'ferro-',     source: 'Latin', english: 'Rail' },
+    tag_courtyard:    { root: 'atri-',      source: 'Latin', english: 'Courtyard' },
+    tag_dam:          { root: 'agger-',     source: 'Latin', english: 'Dam' },
+    tag_chamber:      { root: 'camer-',     source: 'Latin', english: 'Chamber' },
+    tag_monument:     { root: 'mnemo-',     source: 'Greek', english: 'Monument' },
+
+    tag_ruin:         { root: 'frag-',      source: 'Latin', english: 'Fragmentary' },
+    tag_remains:      { root: 'skelet-',    source: 'Greek', english: 'Skeletal' },
+    tag_desolate:     { root: 'relict-',    source: 'Latin', english: 'Derelict' },
+    tag_sunken:       { root: 'mers-',      source: 'Latin', english: 'Sunken' },
+    tag_scorched:     { root: 'carbon-',    source: 'Latin', english: 'Charred' },
+    tag_crack:        { root: 'fiss-',      source: 'Latin', english: 'Fissured' },
+    tag_eroded:       { root: 'erod-',      source: 'Latin', english: 'Eroded' },
+    tag_relocated:    { root: 'migr-',      source: 'Latin', english: 'Displaced' },
+    tag_compressed:   { root: 'press-',     source: 'Latin', english: 'Compressed' },
+    tag_seepage:      { root: 'percol-',    source: 'Latin', english: 'Infiltrated' },
+    tag_contaminated: { root: 'contamin-',  source: 'Latin', english: 'Contaminated' },
+    tag_placed:       { root: 'posit-',     source: 'Latin', english: 'Emplaced' },
+    tag_interstitial: { root: 'interstit-', source: 'Latin', english: 'Interstitial' },
+
+    tag_vine:         { root: 'viti-',      source: 'Latin', english: 'Vine' },
+    tag_moss:         { root: 'bryo-',      source: 'Greek', english: 'Moss' },
+    tag_tree:         { root: 'xylo-',      source: 'Greek', english: 'Woody' },
+    tag_grass:        { root: 'herb-',      source: 'Latin', english: 'Herbaceous' },
+    tag_spike:        { root: 'acantho-',   source: 'Greek', english: 'Thorn' },
+    tag_ash:          { root: 'ciner-',     source: 'Latin', english: 'Ash' },
+    tag_membrane:     { root: 'membran-',   source: 'Latin', english: 'Membrane' },
+    tag_water:        { root: 'hydro-',     source: 'Greek', english: 'Water' },
+    tag_wave:         { root: 'und-',       source: 'Latin', english: 'Wave' },
+    tag_magnetic:     { root: 'magneto-',   source: 'Greek', english: 'Magnetic' },
+    tag_soil:         { root: 'pedo-',      source: 'Greek', english: 'Soil' },
+    tag_sand:         { root: 'aren-',      source: 'Latin', english: 'Sand' }
+});
+
+window.indexLexiconMode = 'roots';
+
+function resolveRuinIndexText(key, targetLang, fallbackText) {
+    if (
+        targetLang === 'en' &&
+        window.indexLexiconMode === 'roots' &&
+        RUIN_ROOT_LEXICON[key]
+    ) {
+        return RUIN_ROOT_LEXICON[key].root;
+    }
+
+    const vault = window.languageVault || (typeof languageVault !== 'undefined' ? languageVault : null);
+    return vault?.[targetLang]?.[key] || fallbackText || '';
+}
+
+function syncRuinRootMetadata() {
+    const isEnglish = window.currentLang === 'en';
+    const isRoots = isEnglish && window.indexLexiconMode === 'roots';
+
+    document.querySelectorAll('.index-tag[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const item = RUIN_ROOT_LEXICON[key];
+
+        if (isRoots && item) {
+            el.classList.add('root-lexeme');
+            el.title = `${item.english} · ${item.source} root ${item.root}`;
+            el.setAttribute('aria-label', `${item.english}; ${item.source} root ${item.root}`);
+        } else {
+            el.classList.remove('root-lexeme');
+            el.removeAttribute('title');
+            el.removeAttribute('aria-label');
+        }
+    });
+}
+
+function syncIndexLexiconToggle() {
+    const toggle = document.getElementById('index-lexicon-toggle');
+    if (!toggle) return;
+
+    const isEnglish = window.currentLang === 'en';
+    toggle.hidden = !isEnglish;
+
+    if (!isEnglish) return;
+
+    const roots = window.indexLexiconMode === 'roots';
+    toggle.textContent = roots ? '[LAT·GR]' : '[ENGLISH]';
+    toggle.dataset.mode = roots ? 'roots' : 'english';
+    toggle.setAttribute(
+        'aria-label',
+        roots
+            ? 'Latin and Greek root mode. Switch to English terms.'
+            : 'English term mode. Switch to Latin and Greek roots.'
+    );
+    toggle.title = roots
+        ? 'Latin / Greek roots · click for English'
+        : 'English terms · click for Latin / Greek roots';
+}
+
+function applyIndexLexiconMode({ animate = true } = {}) {
+    if (window.currentLang !== 'en') {
+        syncIndexLexiconToggle();
+        syncRuinRootMetadata();
+        return;
+    }
+
+    const vault = languageVault.en;
+
+    document.querySelectorAll('.index-tag[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const rootEntry = RUIN_ROOT_LEXICON[key];
+        const targetText =
+            window.indexLexiconMode === 'roots' && rootEntry
+                ? rootEntry.root
+                : vault[key];
+
+        if (!targetText || el.textContent === targetText) return;
+
+        if (
+            animate &&
+            typeof cyberDecodeTranslate === 'function' &&
+            typeof isElementOnScreen === 'function' &&
+            isElementOnScreen(el)
+        ) {
+            cyberDecodeTranslate(el, targetText, 420);
+        } else {
+            el.textContent = targetText;
+        }
+    });
+
+    syncRuinRootMetadata();
+    syncIndexLexiconToggle();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('index-lexicon-toggle');
+    if (toggle) {
+        toggle.hidden = true;
+        toggle.addEventListener('click', () => {
+            window.indexLexiconMode =
+                window.indexLexiconMode === 'roots'
+                    ? 'english'
+                    : 'roots';
+
+            applyIndexLexiconMode({ animate: true });
+        });
+    }
+
+    // Initial English state is ROOTS by default.
+    requestAnimationFrame(() => {
+        applyIndexLexiconMode({ animate: false });
+    });
+});
+</script>
+
+<script>const languageVault = window.languageVault = {
             "en": {
                         "document_title": "Ruin Atlas · Relic Archive",
                         "top_title": "Ruin Atlas",
@@ -626,57 +821,61 @@
                         "index_p1": "Each relic preserves a fleeting picturesque beauty while already carrying the beginning of another collapse. These remnants thus become the ground from which Ruinwrights create “Folly.” Drawing on the garden folly and its aesthetic of deliberately staged ruin, each work condenses long processes of weathering, erosion, and collapse into a final act of self-destruction—something to be seen, heard, and experienced. ⁙",
                         "index_p2": "“Folly” uses graphic scores and mechanical structures to turn each relic into an instrument played by time, nature, and the collapse written into its structure from the moment of construction. As order gradually loosens, architecture begins to perform its own disintegration through sound, vibration, and echo. Freed from their former functions, materials reveal their physical presence, while nature re-enters the rhythm of the space. ⁙",
                         "index_conclusion": "Ultimately, every image, sound, and recovered object returns to the “Relic Archive,” becoming part of a continuously expanding record of ruins. Scattered across the map, these records occupy the same coordinates as landscapes that still appear prosperous and complete; together, they assemble the unfinished “Ruin Atlas.”",
-                        "index_title": "— Index —",
-                        "cat_land": "Land",
-                        "cat_arch": "Architecture",
-                        "cat_status": "State",
-                        "cat_nature": "Nature",
-                        "tag_mountain": "Mountain",
+                        "index_title": "— Ruin Lexicology Index —",
+                        "index_lexicology_intro": "Ruin Lexicology is a ruin-classification system developed by Ruinwrights. It turns site signs into morphemes and connects relics that share them.",
+                        "cat_land": "Terrain",
+                        "cat_arch": "Structure",
+                        "cat_status": "Condition",
+                        "cat_nature": "Environmental Agency",
+                        "tag_mountain": "Montane",
                         "tag_slope": "Slope",
-                        "tag_shore": "Shore",
-                        "tag_bay": "Bay",
+                        "tag_shore": "Littoral",
+                        "tag_bay": "Embayment",
                         "tag_port": "Port",
-                        "tag_plateau": "Plateau",
+                        "tag_plateau": "Tableland",
                         "tag_valley": "Valley",
                         "tag_cliff": "Cliff",
-                        "tag_corridor": "Corridor",
-                        "tag_stair": "Stairway",
+                        "tag_corridor": "Gallery",
+                        "tag_stair": "Stair",
                         "tag_room": "Hall",
                         "tag_dwelling": "Dwelling",
                         "tag_wall": "Wall",
-                        "tag_fort": "Fort",
+                        "tag_fort": "Fortification",
                         "tag_hall": "Palace",
-                        "tag_sacred": "Sacred",
+                        "tag_sacred": "Sanctuary",
                         "tag_tower": "Tower",
-                        "tag_tunnel": "Tunnel",
+                        "tag_tunnel": "Passage",
                         "tag_column": "Column",
-                        "tag_factory": "Factory",
-                        "tag_vessel": "Ship",
-                        "tag_rail": "Railway",
+                        "tag_factory": "Works",
+                        "tag_vessel": "Vessel",
+                        "tag_rail": "Rail",
                         "tag_courtyard": "Courtyard",
                         "tag_dam": "Dam",
-                        "tag_chamber": "Room",
+                        "tag_chamber": "Chamber",
                         "tag_monument": "Monument",
-                        "tag_ruin": "Ruin",
-                        "tag_remains": "Remains",
-                        "tag_desolate": "Desolation",
+                        "tag_ruin": "Fragmentary",
+                        "tag_remains": "Skeletal",
+                        "tag_desolate": "Derelict",
                         "tag_sunken": "Sunken",
-                        "tag_scorched": "Scorched",
-                        "tag_crack": "Crack",
+                        "tag_scorched": "Charred",
+                        "tag_crack": "Fissured",
                         "tag_eroded": "Eroded",
-                        "tag_relocated": "Relocated",
+                        "tag_relocated": "Displaced",
                         "tag_compressed": "Compressed",
-                        "tag_seepage": "Seepage",
+                        "tag_seepage": "Infiltrated",
                         "tag_contaminated": "Contaminated",
+                        "tag_placed": "Emplaced",
+                        "tag_interstitial": "Interstitial",
                         "tag_vine": "Vine",
                         "tag_moss": "Moss",
-                        "tag_tree": "Tree",
+                        "tag_tree": "Woody",
+                        "tag_grass": "Herbaceous",
                         "tag_spike": "Thorn",
                         "tag_ash": "Ash",
                         "tag_membrane": "Membrane",
                         "tag_water": "Water",
                         "tag_wave": "Wave",
-                        "tag_magnetic": "Magnetism",
+                        "tag_magnetic": "Magnetic",
                         "tag_soil": "Soil",
                         "tag_sand": "Sand",
                         "specimen_visual": "Visual Specimen",
@@ -759,6 +958,7 @@
                         "desc_recorded_2026_08_15": "Recorded: 2026.08.15",
                         "desc_recorded_2026_08_16": "Recorded: 2026.08.16",
                         "desc_recorded_2026_08_18": "Recorded: 2026.08.18",
+                        "desc_recorded_2026_09_05": "Recorded: 2026.09.05",
                         "desc_north_hum": "The shattered runway fragments have been worn smooth and hollow by the lake. Now wind and waves pass through them; lake water surges into the cavities, leaving clear, hollow echoes reverberating inside.",
                         "desc_north_ticket": "A stranded piece of ‘wood embracing stone.’ It once took root among fragments of the ruin, until the foundation that held it either fractured or was carried away. Only this remnant, gripped tightly by the roots, remains; day and night the waves wear down its edges as it lies silently stranded on the shore.",
                         "desc_north_ticket_2": "A ‘wood embracing stone’ in the making, from that tree. Half the urge to take flight, half the fixation of clinging to a broken wall. I thought I had photographed a coexistence and resistance still unfolding, until I recently heard that it had already collapsed.",
@@ -828,7 +1028,9 @@
                         "site_name_荒娱敖包": "Arcade Ovoo",
                         "site_desc_荒娱敖包": "In this cold wasteland, where leaving is difficult, one might expect a beacon to offer a map, a telephone, or some other means of reaching the outside world. Instead, what remains is a heap of arcade cabinets. Stacked into an electronic ovoo, they resemble a gift delivered to the wrong place—or a wish made incorrectly—leaving behind an object that is at once useless, absurd, and strangely desperate.",
                         "site_name_彩壳堡": "Chromatic Husk Castle",
-                        "site_desc_彩壳堡": "An unfinished castle rises from the farmland. Concrete and reinforcing steel remain exposed, while the outer walls are already covered in vivid color. The fairy tale was completed before the building itself—and abandoned before it as well.",
+                        "site_desc_彩壳堡": "An unfinished castle rises above the farmland. Concrete and reinforcing steel remain exposed, while the outer walls have long been covered in vivid color. As bricks fall away from the perimeter walls, rough structural columns hidden inside are revealed one by one, and the fairy-tale shell begins to recede back into the building's structure. The people who later came here to paint graffiti seem to have inherited the castle's romance: animals with legs and oddly shaped little figures appear across the walls; areas once meant for patterns and ornament are gradually occupied by tangled marks, while imaginary royalty is replaced by anonymous characters. The fairy tale was completed before the building itself—and abandoned before it as well. Now another temporary population, written in graffiti, inhabits the empty shell.",
+                        "site_name_草间稚居": "Little Dwelling Amid Grass",
+                        "site_desc_草间稚居": "I live near this vacant lot and pass it often. After the former house was demolished, the plot remained empty for a long time, while weeds slowly spread from the edges toward the center. After a rainstorm, I suddenly noticed a tiny house standing in the middle of the grass: a red roof, white walls, and a pink door—probably a plastic playhouse left behind from a child's game of house. Yet it had not fallen into a corner like discarded rubbish. It stood unusually upright in the middle of the lot, facing outward, as if it had deliberately chosen this place as its address. As the weeds grew taller, the little house began to resemble a real building more and more. Its red roof rose through the high grass, giving the thin plastic toy an unexpectedly weighty presence. When I raised my camera, a cat I often see nearby happened to emerge from the grass. It looked at me, then at the little house, as if inspecting a new neighbor that had just moved into its territory.",
                         "site_name_削岩残居": "Rock-Cut Remnant Dwellings",
                         "site_desc_削岩残居": "The mountain has been quarried into successive terraces. Houses scattered across the steps resemble crops after harvest, with only broken walls remaining between layers of exposed rock. Long after the ore was removed, the dwellings remain in place, weathering slowly together with the stripped mountain.",
                         "site_name_迁痕空埠": "Vacant Quay of Migration Traces",
@@ -922,7 +1124,8 @@
                         "index_p1": "一つひとつの遺構は、束の間の「ピクチャレスク（絵画的な美）」をとどめながら、すでに次の崩壊の始まりを孕んでいる。これらの残構は、墟構師が『廃墟園林』を制作する土壌となる。庭園のフォリーに見られる「意図的につくられた廃墟」の美学を手がかりに、長い風化、侵食、崩壊の時間を、見ること・聴くこと・体験することのできる一つの「自壊の終章」へと凝縮する。⁙",
                         "index_p2": "『廃墟園林』では、図形楽譜と機械構造によって、各遺構を、時間と自然、そして建設の時点から構造に書き込まれていた崩壊そのものが奏でる楽器へと変えていく。秩序が少しずつほどけるにつれ、建築は音、振動、反響によって自らの崩壊を演奏し始める。役割を失った素材は物質そのものの姿を現し、自然は再び空間のリズムへ入り込んでいく。⁙",
                         "index_conclusion": "やがて、すべての映像、音、採集物は『遺構館』へと戻り、更新され続ける廃墟のアーカイブとなる。地図上に散在するそれらは、今なお繁栄し、完成しているように見える人工景観と同じ座標を占めている。そうした記録が重なり合いながら、未完の『墟域図』を少しずつ形づくっていく。",
-                        "index_title": "— 索引 —",
+                        "index_title": "— 墟語学索引 —",
+                        "index_lexicology_intro": "「墟語学」は墟構師が独自に組み立てた廃墟の分類法である。現場の徴候を語素へと変換し、共通する徴候をもつ遺構を結びつける。",
                         "cat_land": "土地",
                         "cat_arch": "建築",
                         "cat_status": "状態",
@@ -964,9 +1167,12 @@
                         "tag_compressed": "圧",
                         "tag_seepage": "浸",
                         "tag_contaminated": "汚",
+                        "tag_placed": "置",
+                        "tag_interstitial": "間",
                         "tag_vine": "蔓",
                         "tag_moss": "苔",
                         "tag_tree": "木",
+                        "tag_grass": "草",
                         "tag_spike": "棘",
                         "tag_ash": "灰",
                         "tag_membrane": "膜",
@@ -1055,6 +1261,7 @@
                         "desc_recorded_2026_08_15": "記録日：2026.08.15",
                         "desc_recorded_2026_08_16": "記録日：2026.08.16",
                         "desc_recorded_2026_08_18": "記録日：2026.08.18",
+                        "desc_recorded_2026_09_05": "記録日：2026.09.05",
                         "desc_north_hum": "砕けた滑走路の破片は、湖水に洗われて角が取れ、中空になっている。いまは風と波がその間を通り抜け、湖水が空洞へ流れ込み、澄んだ空ろな反響を響かせる。",
                         "desc_north_ticket": "岸に取り残された「木抱石」の一片。かつては廃墟の破片のあいだに根を張っていたが、足場となっていた基礎は砕け、あるいは流されていった。根に強く締めつけられたこの残骸だけが今も残り、昼夜の波に削られて角を失いながら、静かに岸辺へ打ち上げられている。",
                         "desc_north_ticket_2": "あの木から生まれつつある「木抱石」。半分は羽ばたこうとする渇望、半分は残垣を抱きしめ続ける執念。私は進行中の共生と抵抗を写したつもりだったが、最近になって、それがすでに崩れ落ちたと聞いた。",
@@ -1124,7 +1331,9 @@
                         "site_name_荒娱敖包": "荒野の遊戯オボー",
                         "site_desc_荒娱敖包": "抜け出しにくい冬の荒野で、人は地図や電話、外の世界とつながるための何かを信標に期待するかもしれない。ところが残されていたのは、積み上げられたゲーム筐体だった。それらは電子のオボーのように重なり、届け先を間違えた贈り物、あるいは願い方を間違えた祈りのように、何もない場所へひどく無用で、同時に絶望的なほど奇妙な存在を残している。",
                         "site_name_彩壳堡": "彩殻の城",
-                        "site_desc_彩壳堡": "農地の中に、未完成の城が立っている。コンクリートと鉄筋はむき出しのままなのに、外壁にはすでに鮮やかな色彩が塗られている。童話の世界は建築より先に完成し、そして建築より先に廃墟になった。",
+                        "site_desc_彩壳堡": "農地の中に、未完成の城が立っている。コンクリートと鉄筋はむき出しのままなのに、外壁にはすでに鮮やかな色彩が塗られている。城壁の煉瓦が剥がれ落ちるにつれ、壁の内部に隠れていた粗い構造柱が一本ずつ現れ、童話の外皮は再び構造そのものへと後退していく。あとからここへ落書きをしに来た人々も、城にまつわる浪漫をどこか引き継いでいるようだ。壁には脚の生えた動物や奇妙な小人が現れ、本来は文様や装飾が占めるはずだった場所は雑多な線に覆われ、想像上の王侯たちも名もない落書きの住人に置き換わっていく。童話の世界は建築より先に完成し、そして建築より先に廃墟になった。いま、この空殻には落書きによって仮に書き足された別の住人たちが棲みついている。",
+                        "site_name_草间稚居": "草間の稚居",
+                        "site_desc_草间稚居": "私はこの空き地の近くに住んでおり、よくここを通る。もとの住宅が取り壊されたあと、敷地は長いあいだ空いたままで、雑草が端から中央へ少しずつ広がっていった。ある雨のあと、草地の中央に突然、小さな家が現れていることに気づいた。赤い屋根、白い壁、桃色の扉。子どものままごとに使われたプラスチック製の遊具なのだろう。ところが、それはゴミのように隅へ倒れているのではなく、空き地の中央に妙に端正に立ち、正面を外へ向けて、まるでここを自分の住所として選んだかのようだった。雑草が高くなるほど、小屋はかえって本物の建築に近づいて見えた。赤い屋根は高い草のあいだからせり上がり、薄いプラスチックの玩具に思いがけない重さを与えていた。カメラを構えたとき、近所でよく見かける猫がちょうど草むらから出てきた。猫は私を見て、それから小屋を見て、まるで自分の縄張りに越してきた新しい隣人を品定めしているようだった。",
                         "site_name_削岩残居": "削岩の残居",
                         "site_desc_削岩残居": "山全体が段々状に採掘され、その斜面に散らばる家々は、収穫を終えた畑に残された作物のように見える。鉱石が運び去られた後も、崩れた壁は岩層のあいだに残り、露出した山肌と同じ時間のなかでゆっくりと風化している。",
                         "site_name_迁痕空埠": "遷痕の空埠",
@@ -1218,7 +1427,8 @@
                         "index_p1": "每一处遗构，都保存着稍纵即逝的「如画美」，也孕育着另一场崩解的开始。这些残构由此成为墟构师创作《废墟园林》的土壤：作品借用仿古遗迹园林中「人为安排毁灭」的美学，将漫长的风化、侵蚀与坍塌浓缩成一场可被观看、聆听与经历的「自毁终章」。⁙",
                         "index_p2": "《废墟园林》透过图形记谱与机关结构，将遗构编排成一件由时间、自然，以及建造之初便已写入结构的崩解共同演奏的乐器。当秩序逐渐松动，建筑开始以失去语意的声响、振动与回响演绎自身的崩解；材料也在失去功能后重新显露物性，自然则重新介入空间的节律。⁙",
                         "index_conclusion": "最终，所有影像、声音与遗物重新汇入《遗构馆》，成为持续更新的废墟档案。它们散落于地图之中，与仍然繁盛的人造景观落在同一张地图之上，如同尚未显现的遗构，共同拼凑出仍未完成的《墟域图》。",
-                        "index_title": "— 索引 —",
+                        "index_title": "— 墟语学索引 —",
+                        "index_lexicology_intro": "「墟语学」是墟构师自创的废墟分类法，它将现场征候转化为语素，并连接具有共同征候的遗构。",
                         "cat_land": "土地",
                         "cat_arch": "建筑",
                         "cat_status": "状态",
@@ -1260,9 +1470,12 @@
                         "tag_compressed": "压",
                         "tag_seepage": "渗",
                         "tag_contaminated": "染",
+                        "tag_placed": "置",
+                        "tag_interstitial": "间",
                         "tag_vine": "蔓",
                         "tag_moss": "苔",
                         "tag_tree": "木",
+                        "tag_grass": "草",
                         "tag_spike": "棘",
                         "tag_ash": "灰",
                         "tag_membrane": "膜",
@@ -1351,6 +1564,7 @@
                         "desc_recorded_2026_08_15": "记录时间：2026.08.15",
                         "desc_recorded_2026_08_16": "记录时间：2026.08.16",
                         "desc_recorded_2026_08_18": "记录时间：2026.08.18",
+                        "desc_recorded_2026_09_05": "记录时间：2026.09.05",
                         "desc_north_hum": "破碎的停机坪被碎块被湖水冲刷得圆润中空，如今，风与浪穿梭其间，能听见湖水倒灌其中，回荡着空灵的回声。",
                         "desc_north_ticket": "一块搁浅的‘木抱石’。它曾扎根于废墟碎片之中，后来，赖以立足的基石或断裂、或流散。唯有被根须死死绞住的这一块残骸留存至今，在浪花的日夜打磨中褪去棱角，静默地搁浅在岸边。",
                         "desc_north_ticket_2": "一块正在发生的”木抱石“，来自那棵树。一半是振翅的渴望，一半是紧抱残垣的执念。我以为我拍下了一场正在发生的共生与反抗，直到最近听说它已然轰塌。",
@@ -1420,7 +1634,9 @@
                         "site_name_荒娱敖包": "荒娱敖包",
                         "site_desc_荒娱敖包": "在这片难以离开的寒冬荒原上，人们或许期待信标中出现地图、电话，或任何能与外界建立联系的工具。然而留下的却是成堆的游戏机台。它们被堆叠成一座电子敖包，像一份错误抵达的礼物，也像一次许错了愿，在一无所有之地留下了最无用、也荒诞到令人绝望的存在。",
                         "site_name_彩壳堡": "彩壳堡",
-                        "site_desc_彩壳堡": "农田之上矗立着一座未完成的城堡。混凝土与钢筋仍裸露于外，外墙却已涂满鲜艳的色彩。童话比建筑更早完成，也比建筑更早荒废。",
+                        "site_desc_彩壳堡": "农田之上矗立着一座未完成的城堡。混凝土与钢筋仍裸露于外，外墙却早已涂满鲜艳的色彩。围墙的砖块陆续脱落，藏在墙体里的粗糙承重柱一根根显露出来，童话的外壳开始退回到结构本身。似乎后来来到这里涂鸦的人也继承了城堡的浪漫：墙上出现了长出腿脚的动物和形状怪异的小人，原本属于花纹与装饰的位置逐渐被杂乱的线条占据，想象中的皇室也被这些无名角色取代。童话比建筑更早完成，也比建筑更早荒废；如今，一群由涂鸦临时续写的居民正在占据这座空壳。",
+                        "site_name_草间稚居": "草间稚居",
+                        "site_desc_草间稚居": "我住在这块空地附近，经常从这里经过。原有的住宅被拆除后，地块空置了很久，杂草一点点从边缘向中央蔓延。一场雨后，我忽然发现草地中央多出了一栋小屋：红色屋顶、白色墙面、粉色小门，应该是孩子玩过家家留下的塑料屋。它没有像废弃物那样倒在角落，反而异常端正地立在空地中央，正面朝外，像是认真选择了这里作为自己的地址。杂草越长越高，小屋反而越来越像一栋真正的建筑。红色屋顶从高耸的杂草间顶出来，使这件轻薄的塑料玩具意外显出一种近乎厚重的存在感。我举起相机时，附近那只经常见到的猫正好从草丛里走出来。它看了看我，又看了看小屋，像是在打量这个刚刚搬进自己领地的新邻居。",
                         "site_name_削岩残居": "削岩残居",
                         "site_desc_削岩残居": "整座山体被开采成层层阶地，散落其上的屋舍如同被收割过的作物，只剩残墙停留于岩层之间。当矿石被运走后，它们仍留在原地，与裸露的山体一同缓慢风化。",
                         "site_name_迁痕空埠": "迁痕空埠",
@@ -1499,7 +1715,12 @@
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                const targetText = vault[key];
+                const targetText =
+                    safariDecodeSafety.targetLang === 'en' &&
+                    window.indexLexiconMode === 'roots' &&
+                    RUIN_ROOT_LEXICON?.[key]
+                        ? RUIN_ROOT_LEXICON[key].root
+                        : vault[key];
                 if (!targetText || el.textContent === targetText) return;
 
                 // Cancel a RAF that Safari may have resumed late, then snap only
@@ -1592,8 +1813,13 @@
             document.title = vaultEn.document_title || 'Ruin Atlas · Relic Archive';
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (vaultEn[key]) {
-                    el.textContent = vaultEn[key];
+                const resolvedText =
+                    (window.indexLexiconMode === 'roots' && RUIN_ROOT_LEXICON?.[key])
+                        ? RUIN_ROOT_LEXICON[key].root
+                        : vaultEn[key];
+
+                if (resolvedText) {
+                    el.textContent = resolvedText;
                 }
             });
 
@@ -1631,7 +1857,12 @@
 
             elementsToTranslate.forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                const targetText = vault[key];
+                const targetText =
+                    targetLang === 'en' &&
+                    window.indexLexiconMode === 'roots' &&
+                    RUIN_ROOT_LEXICON?.[key]
+                        ? RUIN_ROOT_LEXICON[key].root
+                        : vault[key];
 
                 if (targetText && el.textContent !== targetText) {
 
@@ -1654,6 +1885,26 @@
             });
 
             scheduleSafariDecodeSafety(switchGeneration);
+
+            // Keep the etymon/English layer in sync with the selected UI language.
+            requestAnimationFrame(() => {
+                syncIndexLexiconToggle();
+                syncRuinRootMetadata();
+
+                if (targetLang === 'en') {
+                    applyIndexLexiconMode({ animate: false });
+                }
+            });
+
+            // Translation callbacks may be staggered by up to 200ms.
+            // Snap the index once more after that window so ROOTS remains the
+            // actual default text layer rather than merely a lowercase style.
+            if (targetLang === 'en') {
+                window.setTimeout(() => {
+                    if (window.currentLang !== 'en') return;
+                    applyIndexLexiconMode({ animate: false });
+                }, 260);
+            }
         }</script>
 </body>
 </html>
