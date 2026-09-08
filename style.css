@@ -71,16 +71,16 @@ img, svg {
 }
 
 .garden-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: #111;
     box-shadow: 0 0 2.5px rgba(0,0,0,0.25);
 }
 
 .record-dot {
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: #111;
     box-shadow: 0 0 2.5px rgba(0,0,0,0.25);
@@ -5537,121 +5537,6 @@ cubic-bezier(.2,.8,.2,1);
     --reader-thumb-contrast: 1;
 }
 
-/* ---------- continuous tone control ---------- */
-
-.main-reader-tone-control {
-    position: fixed;
-    top: 9px;
-    right: 190px;
-    z-index: 1004;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    height: 30px;
-    color: var(--reader-muted);
-    user-select: none;
-    pointer-events: auto;
-}
-
-.main-reader-tone-icon {
-    width: 12px;
-    text-align: center;
-    font: 300 10px/1 "IBM Plex Mono", "IBM Plex Sans JP", monospace;
-    color: var(--reader-muted);
-    opacity: .62;
-    pointer-events: none;
-}
-
-.main-reader-tone-track-wrap {
-    position: relative;
-    width: 116px;
-    height: 30px;
-    display: grid;
-    align-items: center;
-}
-
-.main-reader-tone-slider {
-    position: relative;
-    z-index: 2;
-    appearance: none;
-    -webkit-appearance: none;
-    width: 116px;
-    height: 30px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    outline: none;
-    cursor: ew-resize !important;
-    pointer-events: auto;
-    touch-action: pan-y;
-}
-
-.main-reader-tone-slider::-webkit-slider-runnable-track {
-    height: 1px;
-    background:
-        linear-gradient(
-            90deg,
-            #bdbdb6 0%,
-            #aa9b7e 45%,
-            #77756d 67%,
-            #343630 100%
-        );
-}
-
-.main-reader-tone-slider::-moz-range-track {
-    height: 1px;
-    border: 0;
-    background:
-        linear-gradient(
-            90deg,
-            #bdbdb6 0%,
-            #aa9b7e 45%,
-            #77756d 67%,
-            #343630 100%
-        );
-}
-
-.main-reader-tone-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 11px;
-    height: 11px;
-    margin-top: -5px;
-    border-radius: 50%;
-    border: 1px solid var(--reader-line-strong);
-    background: var(--reader-paper);
-    box-shadow: 0 0 0 1px var(--reader-shadow);
-}
-
-.main-reader-tone-slider::-moz-range-thumb {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    border: 1px solid var(--reader-line-strong);
-    background: var(--reader-paper);
-    box-shadow: 0 0 0 1px var(--reader-shadow);
-}
-
-.main-reader-tone-slider.is-dragging::-webkit-slider-thumb {
-    box-shadow: 0 0 0 3px var(--reader-shadow);
-}
-
-.main-reader-tone-slider.is-dragging::-moz-range-thumb {
-    box-shadow: 0 0 0 3px var(--reader-shadow);
-}
-
-.main-reader-tone-warm-mark {
-    position: absolute;
-    left: 45%;
-    top: 13px;
-    width: 1px;
-    height: 4px;
-    background: var(--reader-line-strong);
-    opacity: .42;
-    transform: translateX(-.5px);
-    pointer-events: none;
-}
-
 /* ---------- atlas ground / architectural frame ---------- */
 
 html,
@@ -6809,4 +6694,1462 @@ html[lang="en"] .index-tags-container {
    merely looking like roots if a language transition is still finishing. */
 html[lang="en"] .index-tag.root-lexeme {
     text-transform: none !important;
+}
+
+
+/* ==========================================================================
+   v93 · Pure-code fracture layer
+   ========================================================================== */
+
+.ruin-fracture-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 2;
+    shape-rendering: geometricPrecision;
+}
+
+.ruin-fracture-border,
+.ruin-fracture-chip,
+.ruin-fracture-crack {
+    fill: none;
+    stroke: var(--reader-line-strong);
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+    vector-effect: non-scaling-stroke;
+}
+
+.ruin-fracture-border {
+    stroke-width: .98;
+}
+
+.ruin-fracture-damaged {
+    stroke-width: 1.04;
+}
+
+.ruin-fracture-chip {
+    stroke-width: .92;
+}
+
+.ruin-fracture-crack {
+    stroke-width: .96;
+}
+
+.ruin-fracture-branch {
+    stroke-width: .92;
+}
+
+/* Main frame: replace the perfect CSS rectangle with the generated SVG line. */
+#main-viewport-frame.fracture-active {
+    border-color: transparent !important;
+}
+
+/* Compass: the old pseudo-element remains the hit/layout surface but its
+   perfect border/diagonal are visually replaced by the fractured SVG outline. */
+.compass-pentagon-outer.fracture-active::after {
+    border-color: transparent !important;
+    background: none !important;
+}
+
+.compass-pentagon-outer > .ruin-fracture-overlay {
+    z-index: 20;
+}
+
+/* Damaged documents keep all actual content intact. Only their border layer
+   changes; no clip-path is applied to text, thumbnails, coordinates or buttons. */
+.archive-doc.fracture-doc {
+    border-color: transparent !important;
+}
+
+.archive-doc.fracture-doc > .ruin-fracture-overlay {
+    z-index: 0;
+}
+
+.archive-doc.fracture-doc > :not(.ruin-fracture-overlay) {
+    position: relative;
+    z-index: 1;
+}
+
+/* A medium-damage sheet gets a slightly less uniform shadow — still subtle. */
+.archive-doc.fracture-doc[data-fracture-severity="medium"]:not(.extracted) {
+    box-shadow:
+        -2px -2px 7px var(--reader-shadow),
+        1px 4px 9px var(--reader-shadow);
+}
+
+/* Avoid extra fracture geometry on compact/mobile layouts; those interfaces
+   already have much less available line space. */
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    .ruin-fracture-overlay {
+        display: none !important;
+    }
+
+    #main-viewport-frame.fracture-active,
+    .archive-doc.fracture-doc {
+        border-color: var(--reader-line-strong) !important;
+    }
+
+    .compass-pentagon-outer.fracture-active::after {
+        border-color: var(--reader-line-strong) !important;
+        background:
+            linear-gradient(
+                to top right,
+                transparent 50%,
+                var(--reader-line-strong) 50%,
+                var(--reader-line-strong) calc(50% + 1.2px),
+                transparent calc(50% + 1.2px)
+            ) !important;
+        background-size: 35px 35px !important;
+        background-position: bottom left !important;
+        background-repeat: no-repeat !important;
+    }
+}
+
+
+
+
+/* ==========================================================================
+   v95 · fracture system repair
+   --------------------------------------------------------------------------
+   Fixes:
+   - do not override the original fixed/absolute positioning of the layout
+   - keep the map inner frame visible again
+   - restore the compass cut-corner geometry
+   - keep the index drawer in its original place/shape
+   - archive-doc damage no longer uses the hidden bottom edge
+   ========================================================================== */
+
+#ruin-fracture-global-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9;
+}
+
+body.ruin-fracture-active .perspective-line line {
+    stroke: transparent !important;
+}
+
+#main-viewport-frame.fracture-active {
+    border-color: transparent !important;
+}
+
+.compass-pentagon-outer.fracture-active::after {
+    border-color: transparent !important;
+    background: none !important;
+}
+
+#index-drawer.fracture-active #index-drawer-handle .frosted-shape {
+    border-color: transparent !important;
+}
+
+#index-drawer.fracture-active #index-drawer-handle .drawer-perspective-line line {
+    stroke: transparent !important;
+}
+
+#main-viewport-frame > .ruin-fracture-overlay,
+.compass-pentagon-outer > .ruin-fracture-overlay,
+#index-drawer > .ruin-fracture-overlay,
+.archive-doc > .ruin-fracture-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    shape-rendering: geometricPrecision;
+}
+
+#ruin-fracture-global-layer > .ruin-fracture-overlay {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+#main-viewport-frame > .ruin-fracture-overlay {
+    z-index: 1;
+}
+
+.compass-pentagon-outer > .ruin-fracture-overlay {
+    z-index: 3;
+}
+
+#index-drawer > .ruin-fracture-overlay {
+    z-index: 0;
+}
+
+#index-drawer > :not(.ruin-fracture-overlay) {
+    position: relative;
+    z-index: 1;
+}
+
+.archive-doc.fracture-doc {
+    border-color: transparent !important;
+}
+
+.archive-doc > .ruin-fracture-overlay {
+    z-index: 0;
+}
+
+.archive-doc > :not(.ruin-fracture-overlay) {
+    position: relative;
+    z-index: 1;
+}
+
+.ruin-fracture-border,
+.ruin-fracture-crack,
+.ruin-fracture-branch {
+    fill: none;
+    stroke: var(--reader-line-strong);
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ruin-fracture-border {
+    stroke-width: 0.98;
+}
+
+.ruin-fracture-crack {
+    stroke-width: 0.96;
+}
+
+.ruin-fracture-branch {
+    stroke-width: 0.92;
+}
+
+.archive-doc.fracture-doc[data-fracture-severity="medium"]:not(.extracted) {
+    box-shadow:
+        -2px -2px 7px var(--reader-shadow),
+        1px 4px 9px var(--reader-shadow);
+}
+
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    #ruin-fracture-global-layer,
+    #main-viewport-frame > .ruin-fracture-overlay,
+    .compass-pentagon-outer > .ruin-fracture-overlay,
+    #index-drawer > .ruin-fracture-overlay,
+    .archive-doc > .ruin-fracture-overlay {
+        display: none !important;
+    }
+
+    body.ruin-fracture-active .perspective-line line {
+        stroke: var(--reader-line-strong) !important;
+    }
+
+    #main-viewport-frame.fracture-active {
+        border-color: var(--reader-line-strong) !important;
+    }
+
+    .compass-pentagon-outer.fracture-active::after {
+        border-color: var(--reader-line-strong) !important;
+        background:
+            linear-gradient(
+                to top right,
+                transparent 50%,
+                var(--reader-line-strong) 50%,
+                var(--reader-line-strong) calc(50% + 1.2px),
+                transparent calc(50% + 1.2px)
+            ) !important;
+        background-size: 35px 35px !important;
+        background-position: bottom left !important;
+        background-repeat: no-repeat !important;
+    }
+
+    #index-drawer.fracture-active #index-drawer-handle .frosted-shape {
+        border-color: var(--reader-line-strong) !important;
+    }
+
+    #index-drawer.fracture-active #index-drawer-handle .drawer-perspective-line line {
+        stroke: var(--reader-line-strong) !important;
+    }
+
+    .archive-doc.fracture-doc {
+        border-color: var(--reader-line-strong) !important;
+    }
+}
+
+
+/* v96 refinements */
+.compass-pentagon-outer.fracture-active::after {
+    border: 1px solid var(--reader-line-strong) !important;
+    background: linear-gradient(
+        to top right,
+        transparent 50%,
+        var(--reader-line-strong) 50%,
+        var(--reader-line-strong) calc(50% + 1.2px),
+        transparent calc(50% + 1.2px)
+    ) !important;
+    background-size: 35px 35px !important;
+    background-position: bottom left !important;
+    background-repeat: no-repeat !important;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 35px 100%, 0 calc(100% - 35px)) !important;
+}
+
+.compass-pentagon-outer > .ruin-fracture-overlay { overflow: visible; }
+.archive-doc > .ruin-fracture-overlay { overflow: visible; }
+
+
+/* v98 corner shatter emphasis */
+#ruin-fracture-main-frame .ruin-fracture-corner-crack {
+    stroke-width: 1.10;
+}
+#ruin-fracture-main-frame .ruin-fracture-corner-branch {
+    stroke-width: 0.96;
+}
+
+/* v99 corner crack fix */
+#ruin-fracture-main-frame .ruin-fracture-corner-crack,
+#ruin-fracture-main-frame .ruin-fracture-corner-branch {
+    fill: none;
+    stroke: var(--reader-line-strong);
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* v101 · narrow Y-shaped corner fracture */
+#ruin-fracture-main-frame .ruin-fracture-corner-stem,
+#ruin-fracture-main-frame .ruin-fracture-corner-branch {
+    fill: none;
+    stroke: var(--reader-line-strong);
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+}
+#ruin-fracture-main-frame .ruin-fracture-corner-stem {
+    stroke-width: 1.08;
+}
+#ruin-fracture-main-frame .ruin-fracture-corner-branch {
+    stroke-width: 0.94;
+}
+
+
+/* v102 asymmetry: keep corner cracks crisp while allowing non-mirrored wide-Y shapes */
+
+
+/* v119: generated compass fracture fully replaces the original lower-left diagonal */
+.compass-pentagon-outer.fracture-active::after {
+    border: 0 !important;
+    background: none !important;
+    clip-path: none !important;
+}
+
+/* v121: the parent clip-path was still clipping the refreshed fractured edge.
+   When the generated cross-section is active, remove the old polygon clip so
+   the new broken outline can render fully above the original shape. */
+.compass-pentagon-outer.fracture-active {
+    clip-path: none !important;
+}
+
+
+/* v122 · compass fracture is its own boundary; never clip the generated edge. */
+.compass-pentagon-outer.fracture-active {
+    clip-path: none !important;
+    overflow: visible !important;
+}
+.compass-pentagon-outer.fracture-active > .ruin-fracture-overlay {
+    overflow: visible !important;
+    clip-path: none !important;
+}
+
+
+/* v123 · stone-face compass fracture */
+.compass-pentagon-outer .ruin-fracture-damaged {
+    stroke-width: 1.04;
+    stroke-linejoin: miter;
+    stroke-linecap: square;
+}
+
+/* v129 · fine roughness only at the frame-contact zones of the top-left flake */
+#ruin-fracture-main-frame .ruin-fracture-edge-grain {
+    fill: none;
+    stroke: var(--reader-line-strong);
+    stroke-width: 0.92;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* ========================================================================== 
+   v136 · index-drawer real split / transparent fracture
+   ========================================================================== */
+#index-drawer {
+    overflow: visible;
+}
+
+#index-drawer > .ruin-index-drawer-surface {
+    position: absolute !important;
+    inset: 0;
+    z-index: 0 !important;
+    pointer-events: none;
+    background: var(--reader-paper-80) !important;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+#index-drawer > .ruin-index-drawer-surface-fragment {
+    /* Tiny separation keeps the shard from reading as a mere drawn line. */
+    transform: translate(-0.8px, 0.7px);
+    transform-origin: left top;
+}
+
+#index-drawer.fracture-active #index-drawer-handle .frosted-shape {
+    background: transparent !important;
+    border-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#index-drawer.fracture-active #index-drawer-content {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#index-drawer > .ruin-fracture-overlay {
+    z-index: 3 !important;
+}
+
+#index-drawer > :not(.ruin-fracture-overlay):not(.ruin-index-drawer-surface) {
+    position: relative;
+    z-index: 2 !important;
+}
+
+.ruin-fracture-index-cut {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ruin-fracture-index-cut-fragment {
+    stroke-width: 0.98px;
+}
+
+.ruin-fracture-index-cut-main {
+    stroke-width: 0.94px;
+}
+
+.ruin-fracture-index-branch {
+    stroke-width: 0.90px;
+}
+
+
+/* ========================================================================== 
+   v137 · index-drawer bilateral split refinement
+   ========================================================================== */
+#index-drawer[data-fracture-side="left"] > .ruin-index-drawer-surface-fragment {
+    transform: translate(-1.2px, 0.9px) rotate(0.035deg);
+    transform-origin: left top;
+}
+
+#index-drawer[data-fracture-side="right"] > .ruin-index-drawer-surface-fragment {
+    transform: translate(1.2px, 0.9px) rotate(-0.035deg);
+    transform-origin: right top;
+}
+
+.ruin-fracture-index-root-face {
+    stroke-linecap: butt !important;
+    stroke-linejoin: bevel !important;
+}
+
+.ruin-fracture-index-cut-fragment.ruin-fracture-index-root-face {
+    stroke-width: 1.12px;
+}
+
+.ruin-fracture-index-cut-main.ruin-fracture-index-root-face {
+    stroke-width: 1.08px;
+}
+
+.ruin-fracture-index-inner {
+    stroke-width: 1.02px;
+    stroke-linecap: butt;
+    stroke-linejoin: bevel;
+}
+
+.ruin-fracture-index-branch {
+    stroke-width: 0.98px;
+    stroke-linecap: butt;
+    stroke-linejoin: bevel;
+}
+
+.ruin-fracture-index-detail {
+    stroke-width: 0.98px;
+    stroke-linecap: butt;
+    stroke-linejoin: bevel;
+}
+
+.ruin-fracture-index-debris {
+    stroke-width: 0.88px;
+    stroke-linecap: round;
+    stroke-linejoin: bevel;
+}
+
+
+/* ========================================================================== 
+   v145 · Illustrator-editable Index Drawer SVG
+   The geometry / cracks live in assets/index-drawer.svg.
+   ========================================================================== */
+
+#index-drawer-handle,
+#index-drawer-content {
+    isolation: isolate;
+}
+
+.index-drawer-svg-host {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    color: var(--reader-line-strong, #666660);
+}
+
+.index-drawer-svg-host > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#index-drawer-svg-handle {
+    height: 60px;
+}
+
+#index-drawer-svg-body {
+    width: 100%;
+    height: 100%;
+}
+
+/* Keep the existing frosted backdrop behavior, but let the editable SVG
+   provide the visible paper fill and all frame/crack lines. */
+#index-drawer.index-drawer-svg-ready #index-drawer-handle .frosted-shape {
+    border-color: transparent !important;
+    background: transparent !important;
+}
+
+#index-drawer.index-drawer-svg-ready #index-drawer-content {
+    background: transparent !important;
+}
+
+#index-drawer.index-drawer-svg-ready .drawer-perspective-line {
+    opacity: 0 !important;
+}
+
+/* v157 · SVG layer stacking fix
+   Do NOT change the positioning model of handle UI children.
+   In v145+ this selector forced #bottom-labels from absolute -> relative,
+   which shifted the whole label rail to the right. Keep only stacking here. */
+#index-drawer-handle > :not(.index-drawer-svg-host):not(.frosted-shape):not(.drawer-perspective-line) {
+    z-index: 2;
+}
+
+/* Drawer body content still needs its existing relative stacking context. */
+#index-drawer-content > :not(.index-drawer-svg-host) {
+    position: relative;
+    z-index: 2;
+}
+
+/* The SVG is now the only source of Index Drawer fracture lines. */
+#index-drawer > .ruin-fracture-index-drawer,
+#index-drawer .ruin-fracture-index-drawer {
+    display: none !important;
+}
+
+/* v146 · lower-right outward fracture */
+#ruin-fracture-main-frame .ruin-fracture-outward-stem {
+    stroke-width: 1.02px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#ruin-fracture-main-frame .ruin-fracture-outward-branch {
+    stroke-width: .98px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#ruin-fracture-main-frame .ruin-fracture-outward-branch-minor {
+    stroke-width: .92px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* v156 · bottom labels restored to the original desktop layout. */
+
+#ruin-fracture-main-frame .ruin-fracture-upper-attached-pit {
+    stroke-width: 0.98px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+
+/* v157 · preserve the pre-SVG bottom-label geometry exactly. */
+#index-drawer-handle #bottom-labels {
+    position: absolute;
+    bottom: 17px;
+    left: 210px;
+    right: 148px;
+    width: auto;
+}
+
+
+/* v178 · compass micro-chip anti-spike fix
+   Tiny random corner chips can contain acute angles. The legacy damaged-edge
+   rule uses miter joins, which visually extends those corners into needle-like
+   spikes. Use bevel joins only for these micro chips. */
+.compass-pentagon-outer .ruin-fracture-compass-chip {
+    stroke-linejoin: bevel !important;
+    stroke-linecap: butt !important;
+    stroke-miterlimit: 1.25 !important;
+}
+
+
+/* ==========================================================================
+   v181 · Index Drawer crack overpass + Archive Doc default cut corners
+   ========================================================================== */
+
+/* The archive stacks rise to z-index 20001 while the Index Drawer is open.
+   Keep only the crack geometry above them; the paper/fill SVG stays below. */
+.index-drawer-crack-overpass {
+    position: fixed;
+    z-index: 20020;
+    pointer-events: none;
+    overflow: hidden;
+    display: none;
+}
+
+.index-drawer-crack-overpass > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Every archive sheet now has a quiet, permanent double-cut top edge. */
+.archive-doc.archive-cut-doc {
+    border-color: transparent !important;
+}
+
+.archive-doc.archive-cut-doc > .ruin-fracture-archive-base {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 0;
+    shape-rendering: geometricPrecision;
+}
+
+.archive-doc.archive-cut-doc > :not(.ruin-fracture-overlay) {
+    position: relative;
+    z-index: 1;
+}
+
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    .index-drawer-crack-overpass {
+        display: none !important;
+    }
+
+    .archive-doc.archive-cut-doc {
+        border-color: var(--reader-line-strong) !important;
+        clip-path: none !important;
+        -webkit-clip-path: none !important;
+    }
+
+    .archive-doc.archive-cut-doc > .ruin-fracture-archive-base {
+        display: none !important;
+    }
+}
+
+/* ========================================================================== 
+   v182 · restore occasional archive-paper misregistration
+   --------------------------------------------------------------------------
+   A small minority of sheets sit slightly out of register. The offsets are
+   carried through the sliding-stack compositor transforms instead of using a
+   competing transform declaration, so the old physical-paper effect returns
+   without breaking extraction/retraction.
+   ========================================================================== */
+
+#stack-record .archive-doc.archive-misaligned:not(.extracted) {
+    transform: translate3d(
+        calc(var(--stack-x, 0px) + var(--archive-misalign-x, 0px)),
+        calc(var(--stack-y, 0px) + var(--archive-misalign-y, 0px)),
+        0
+    ) rotate(var(--archive-misalign-rot, 0deg));
+}
+
+#stack-record .archive-doc.archive-misaligned.stack-flat-top:hover,
+#stack-record .archive-doc.archive-misaligned.stack-flat-bottom:hover {
+    transform: translate3d(
+        calc(var(--stack-x, 0px) + var(--archive-misalign-x, 0px)),
+        calc(var(--stack-y, 0px) + var(--archive-misalign-y, 0px)),
+        0
+    ) rotate(var(--archive-misalign-rot, 0deg));
+}
+
+#stack-record .archive-doc.archive-misaligned.stack-fan:hover:not(.extracted) {
+    transform: translate3d(
+        calc(var(--stack-x, 0px) + var(--archive-misalign-x, 0px)),
+        calc(var(--stack-y, 0px) + var(--archive-misalign-y, 0px) - 8px),
+        0
+    ) rotate(var(--archive-misalign-rot, 0deg));
+}
+
+#stack-garden .archive-doc.archive-misaligned:not(.extracted) {
+    transform: translate(
+        var(--archive-misalign-x, 0px),
+        var(--archive-misalign-y, 0px)
+    ) rotate(var(--archive-misalign-rot, 0deg));
+}
+
+#stack-garden .archive-doc.archive-misaligned:hover:not(.extracted) {
+    transform: translate(
+        var(--archive-misalign-x, 0px),
+        calc(var(--archive-misalign-y, 0px) - 8px)
+    ) rotate(var(--archive-misalign-rot, 0deg));
+}
+
+/* v185 · archive-doc return lines: lighter and true hairline */
+.ruin-fracture-chip-return {
+    stroke: rgba(102, 102, 96, 0.52) !important;
+    stroke-width: 1px !important;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* ==========================================================================
+   v186 · Index Drawer SVG surface stabilization
+   --------------------------------------------------------------------------
+   1) Once the authored SVG is active, the old frosted plate is no longer a
+      visual layer. Keep the DOM node only for compatibility with old scripts.
+   2) The stone/SVG body height is tied to the viewport, not to translated text
+      length. Chinese / English / Japanese therefore share one stable geometry.
+      Longer copy scrolls inside the stone instead of stretching the cracks.
+   ========================================================================== */
+
+#index-drawer.index-drawer-svg-ready #index-drawer-handle .frosted-shape {
+    display: none !important;
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+#index-drawer.index-drawer-svg-ready #index-drawer-content {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Desktop/tablet-landscape: treat the drawer as one physical slab.
+   Its geometry does not grow with language copy. */
+@media (min-width: 769px) and (min-height: 521px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-content {
+        height: clamp(500px, 65vh, 700px) !important;
+        max-height: calc(85vh - 60px) !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable both-edges;
+    }
+
+    #index-drawer.index-drawer-svg-ready #index-drawer-svg-body {
+        top: 0 !important;
+        bottom: 0 !important;
+        height: 100% !important;
+    }
+}
+
+/* Compact/mobile keeps the existing responsive behavior. */
+@media (max-width: 768px),
+       (max-width: 950px) and (max-height: 520px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-handle .frosted-shape {
+        display: block !important;
+        background: transparent !important;
+        border-color: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+
+    #index-drawer.index-drawer-svg-ready #index-drawer-content {
+        height: auto !important;
+        scrollbar-gutter: auto;
+    }
+}
+
+
+/* ========================================================================== 
+   v187 · fixed stone slab + independent text scroller
+   --------------------------------------------------------------------------
+   The SVG/background no longer lives inside the scrolling content flow.
+   Only #index-drawer-scroll-layer scrolls. This keeps the handle seam attached
+   and prevents the background from running out when English/Japanese copy is
+   taller than Chinese copy.
+   ========================================================================== */
+
+#index-drawer.index-drawer-svg-ready #index-drawer-content {
+    position: relative !important;
+    display: block !important;
+    overflow: hidden !important;
+    padding: 46px 190px 23px 250px !important;
+    box-sizing: border-box !important;
+}
+
+#index-drawer.index-drawer-svg-ready #index-drawer-svg-body {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 0 !important;
+    overflow: hidden !important;
+}
+
+#index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 2 !important;
+    box-sizing: border-box !important;
+    padding: inherit !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable both-edges;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Keep the physical slab at a stable viewport-derived size. Language changes
+   affect only the inner scroll layer, never the SVG geometry. */
+@media (min-width: 769px) and (min-height: 521px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-content {
+        height: min(700px, calc(85vh - 60px)) !important;
+        max-height: calc(85vh - 60px) !important;
+        min-height: 500px !important;
+    }
+}
+
+@media (max-width: 1100px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-content {
+        padding: 10px 80px 18px 80px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-content {
+        position: relative !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: calc(85vh - 60px) !important;
+        padding: 8px 20px 18px 20px !important;
+        overflow: hidden !important;
+    }
+
+    #index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer {
+        position: relative !important;
+        inset: auto !important;
+        max-height: calc(85vh - 60px) !important;
+        padding: inherit !important;
+        scrollbar-gutter: auto;
+    }
+}
+
+/* ========================================================================== 
+   v188 · bottom-anchored Ruin Lexicology + language-aware compact rhythm
+   --------------------------------------------------------------------------
+   - When the drawer copy fits, the Ruin Lexicology index sits against the
+     bottom of the stone slab automatically.
+   - When translated copy becomes taller than the slab, the auto margin
+     collapses and the inner layer scrolls normally.
+   - English typography is tightened first to reduce unnecessary wrapping.
+   ========================================================================== */
+
+@media (min-width: 769px) and (min-height: 521px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        scrollbar-gutter: auto !important;
+    }
+
+    #index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer > * {
+        flex: 0 0 auto;
+    }
+
+    /* Auto spacer: fills only the unused vertical room. As soon as the copy
+       overflows, this margin resolves to zero and scrolling takes over. */
+    #index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer > .index-items {
+        margin-top: auto !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* Keep the index physically close to the lower stone edge rather than
+       leaving the old large dead zone underneath it. */
+    #index-drawer.index-drawer-svg-ready .archive-index-system {
+        padding-bottom: 2px !important;
+    }
+}
+
+/* English is the tallest version. Reduce tracking and vertical rhythm before
+   allowing overflow, so more of it can remain in the fixed stone slab. */
+html[lang="en"] #index-drawer .index-top-title,
+html[lang="en"] #index-drawer .index-three-columns,
+html[lang="en"] #index-drawer .index-conclusion {
+    letter-spacing: .26px !important;
+    line-height: 1.42 !important;
+}
+
+html[lang="en"] #index-drawer .index-three-columns {
+    column-gap: 48px !important;
+}
+
+html[lang="en"] #index-drawer .index-manifesto-link,
+html[lang="en"] #index-drawer #archive-add-link {
+    letter-spacing: .20px !important;
+    line-height: 1.24 !important;
+}
+
+html[lang="en"] #index-drawer .index-manifesto-crossref {
+    margin-bottom: 18px !important;
+}
+
+html[lang="en"] #index-drawer .archive-index-title {
+    letter-spacing: 2.8px !important;
+    margin-bottom: 4px !important;
+}
+
+html[lang="en"] #index-drawer .index-lexicology-intro {
+    letter-spacing: .12px !important;
+    line-height: 1.40 !important;
+    margin-bottom: 8px !important;
+}
+
+html[lang="en"] #index-drawer .archive-index-system {
+    gap: 6px 16px !important;
+}
+
+html[lang="en"] #index-drawer .index-row {
+    column-gap: 2px !important;
+    line-height: 1.15 !important;
+}
+
+html[lang="en"] #index-drawer .index-category {
+    letter-spacing: .075em !important;
+}
+
+html[lang="en"] #index-drawer .index-separator {
+    margin: 0 5px !important;
+}
+
+html[lang="en"] #index-drawer .index-tags-container {
+    column-gap: 3px !important;
+    row-gap: 3px !important;
+}
+
+html[lang="en"] #index-drawer .index-tag,
+html[lang="en"] #index-drawer .index-tag.root-lexeme {
+    letter-spacing: .05px !important;
+}
+
+/* Chinese/Japanese already fit easily; simply keep the index pinned low and
+   trim a little of the formerly generous gap above the index block. */
+html[lang="zh-Hans"] #index-drawer .index-manifesto-crossref,
+html[lang="ja"] #index-drawer .index-manifesto-crossref {
+    margin-bottom: 20px !important;
+}
+
+@media (max-width: 1100px) and (min-width: 769px) {
+    html[lang="en"] #index-drawer .index-top-title,
+    html[lang="en"] #index-drawer .index-three-columns,
+    html[lang="en"] #index-drawer .index-conclusion {
+        letter-spacing: .16px !important;
+        line-height: 1.38 !important;
+    }
+
+    html[lang="en"] #index-drawer .index-three-columns {
+        column-gap: 34px !important;
+    }
+
+    html[lang="en"] #index-drawer .archive-index-system {
+        gap: 5px 10px !important;
+    }
+}
+
+/* ========================================================================== 
+   v189 · adaptive-height Index Drawer
+   --------------------------------------------------------------------------
+   The English layout defines only the maximum allowed slab height now.
+   Shorter languages shrink the physical drawer itself.  The auto margin above
+   .index-items remains the elastic zone and is therefore compressed first.
+   ========================================================================== */
+
+@media (min-width: 769px) and (min-height: 521px) {
+    #index-drawer.index-drawer-svg-ready #index-drawer-content {
+        height: var(--index-drawer-adaptive-height, min(700px, calc(85vh - 60px))) !important;
+        min-height: 0 !important;
+        max-height: calc(85vh - 60px) !important;
+    }
+
+    #index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        scrollbar-gutter: auto !important;
+    }
+
+    /* The spacer is still automatic, but because the slab now shrinks to the
+       measured copy it stays modest instead of becoming a large dead field. */
+    #index-drawer.index-drawer-svg-ready #index-drawer-scroll-layer > .index-items {
+        margin-top: auto !important;
+    }
+}
+
+/* Slightly tighter English rhythm before overflow is allowed. */
+html[lang="en"] #index-drawer .index-top-title,
+html[lang="en"] #index-drawer .index-three-columns,
+html[lang="en"] #index-drawer .index-conclusion {
+    letter-spacing: .12px !important;
+    line-height: 1.38 !important;
+}
+
+html[lang="en"] #index-drawer .index-three-columns {
+    column-gap: 42px !important;
+}
+
+html[lang="en"] #index-drawer .archive-index-title {
+    letter-spacing: 2.35px !important;
+}
+
+html[lang="en"] #index-drawer .index-lexicology-intro {
+    letter-spacing: .05px !important;
+    line-height: 1.34 !important;
+}
+
+html[lang="en"] #index-drawer .index-category {
+    letter-spacing: .055em !important;
+}
+
+
+/* ==========================================================================
+   v190 · Archive index dot restoration + carved light-scale trial
+   ========================================================================== */
+
+/* Index ↔ archive-doc linkage dot. The new archive-doc clip-path was cutting
+   off the old outside-positioned marker. Keep it inside the paper corner. */
+.archive-doc.matched-tag::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 7px !important;
+    width: 5px !important;
+    height: 5px !important;
+    border-radius: 50% !important;
+    background: var(--reader-marker) !important;
+    box-shadow: 0 0 1.5px var(--reader-shadow) !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: none !important;
+    z-index: 8 !important;
+}
+
+.position-left .archive-doc.matched-tag::after {
+    right: 8px !important;
+    left: auto !important;
+}
+
+.position-right .archive-doc.matched-tag::after {
+    left: 8px !important;
+    right: auto !important;
+}
+
+/* All fracture return/bridge lines are secondary information: lighter and
+   exactly 1px. Archive-doc wear no longer creates these at all in v190. */
+.ruin-fracture-chip-return {
+    stroke: var(--reader-line) !important;
+    stroke-width: 1px !important;
+    stroke-opacity: .64 !important;
+    vector-effect: non-scaling-stroke;
+}
+
+/* ========================================================================== 
+   v191 · authored index-drawer variant weighting + frosted surface fill
+   --------------------------------------------------------------------------
+   The irregular slab now keeps the user-authored SVG variants and uses layered
+   translucent fills to restore the earlier white frosted-glass feeling inside
+   the closed stone shape itself.
+   ========================================================================== */
+.index-drawer-svg-host > svg .drawer-fill-frosted {
+    fill: rgba(255,255,255,0.76);
+    opacity: 0.92;
+}
+
+.index-drawer-svg-host > svg .drawer-fill-sheen {
+    opacity: 0.42;
+}
+
+.index-drawer-svg-host > svg .drawer-frame {
+    fill: none;
+    stroke: rgba(0,0,0,0.42);
+    vector-effect: non-scaling-stroke;
+    stroke-linejoin: miter;
+    stroke-linecap: butt;
+}
+
+.index-drawer-crack-overpass > svg .drawer-frame {
+    fill: none;
+    stroke: rgba(0,0,0,0.40);
+}
+
+.index-drawer-crack-overpass > svg .drawer-fill-frosted,
+.index-drawer-crack-overpass > svg .drawer-fill-sheen {
+    display: none !important;
+}
+
+
+/* ========================================================================== 
+   v192 · single-candidate Index Drawer + real frosted mask
+   ========================================================================== */
+.index-drawer-svg-host {
+    overflow: hidden;
+}
+
+.index-drawer-svg-host > .index-drawer-frost-mask {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: rgba(255,255,255,0.76);
+    backdrop-filter: blur(3px) saturate(0.92);
+    -webkit-backdrop-filter: blur(3px) saturate(0.92);
+}
+
+.index-drawer-svg-host > svg {
+    position: relative;
+    z-index: 1;
+}
+
+/* v191's synthetic SVG fills are intentionally disabled. The actual blur is
+   now an HTML backdrop-filter layer masked by the selected closed SVG path. */
+.index-drawer-svg-host > svg .drawer-fill-frosted,
+.index-drawer-svg-host > svg .drawer-fill-sheen {
+    display: none !important;
+}
+
+.index-drawer-svg-host > svg .drawer-frame {
+    fill: none !important;
+    stroke: rgba(0,0,0,0.42);
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+}
+
+/* ========================================================================== 
+   v193 · bottom index hit-area repair + slightly larger atlas dots
+   --------------------------------------------------------------------------
+   1) The opened bottom decoration previously re-enabled pointer events on its
+      full-width label wrapper. That invisible strip sat above the lowest
+      Ruin-Lexicology row and intercepted clicks.
+   2) Only the two actual opened controls remain interactive; all empty space
+      between them is now click-through.
+   3) Main-atlas dots are kept geometrically centered after the small size lift.
+   ========================================================================== */
+
+/* Keep Leaflet's geographic anchor at the visual centre of the enlarged dot. */
+.ruin-marker .record-dot,
+.ruin-marker .garden-dot {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* The fixed bottom decoration is visual chrome, not a page-wide hit target. */
+#drawer-opened-bottom-decor .bottom-decor-labels {
+    pointer-events: none !important;
+}
+
+/* Preserve the two real controls exactly as before. */
+#opened-trigger-record,
+#opened-trigger-ruin {
+    pointer-events: auto !important;
+}
+
+/* Reassert the actual Ruin-Lexicology hit targets in the open drawer. */
+#index-drawer.open .index-tags-container,
+#index-drawer.open .index-tag,
+#index-drawer.open .index-lexicon-toggle,
+#index-drawer.open .index-manifesto-link,
+#index-drawer.open #archive-add-link {
+    pointer-events: auto;
+}
+
+
+
+/* ========================================================================== 
+   v197 · five-step eclipse selector + Index Drawer night adaptation
+   --------------------------------------------------------------------------
+   No track, no range input, no slider thumb. Five independent eclipse stages
+   select the same smoothly interpolated reading environments.
+   ========================================================================== */
+.main-reader-tone-control.ruin-carved-tone {
+    position: fixed;
+    top: 8px;
+    right: 214px;
+    z-index: 1004;
+    width: 166px;
+    height: 34px;
+    color: var(--reader-muted);
+    user-select: none;
+    pointer-events: auto;
+}
+
+.ruin-carved-tone .main-reader-tone-track-wrap {
+    position: relative;
+    width: 166px;
+    height: 34px;
+}
+
+.tone-step-buttons {
+    position: absolute;
+    inset: 0 7px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+}
+
+.tone-step-button {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--reader-line-strong);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: .56;
+    transition: opacity 240ms ease, transform 240ms ease, filter 240ms ease;
+}
+
+.tone-step-button:hover {
+    opacity: .86;
+}
+
+.tone-step-button:focus-visible {
+    outline: none;
+    opacity: .94;
+}
+
+.tone-step-button.is-active,
+.tone-step-button[aria-checked="true"] {
+    opacity: 1;
+    transform: translateY(-0.5px) scale(1.06);
+}
+
+/* Monochrome lunar-eclipse stages. The moon surface follows --reader-paper;
+   the shadow follows --reader-line-strong, so it remains coherent in eye-care
+   and night modes instead of turning into platform-specific color emoji. */
+.tone-eclipse-icon {
+    position: relative;
+    display: block;
+    width: 12px;
+    height: 12px;
+    overflow: hidden;
+    border: 1px solid var(--reader-line-strong);
+    border-radius: 50%;
+    background: var(--reader-paper);
+    box-sizing: border-box;
+    transition: background 260ms ease, border-color 260ms ease;
+}
+
+.tone-eclipse-icon::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: var(--reader-line-strong);
+    transition: background 260ms ease;
+}
+
+/* full moon / no eclipse */
+.tone-eclipse-0::after {
+    display: none;
+}
+
+/* early partial eclipse: curved shadow enters from the right */
+.tone-eclipse-1::after {
+    width: 12px;
+    height: 12px;
+    top: -1px;
+    left: 6px;
+}
+
+/* half eclipse */
+.tone-eclipse-2::after {
+    width: 6px;
+    height: 12px;
+    top: -1px;
+    right: -1px;
+    border-radius: 0 50% 50% 0;
+}
+
+/* deep eclipse: dark disc with a thin illuminated crescent */
+.tone-eclipse-3 {
+    background: var(--reader-line-strong);
+}
+
+.tone-eclipse-3::after {
+    width: 12px;
+    height: 12px;
+    top: -1px;
+    left: -5px;
+    background: var(--reader-paper);
+}
+
+/* total eclipse / night */
+.tone-eclipse-4 {
+    background: var(--reader-line-strong);
+}
+
+.tone-eclipse-4::after {
+    display: none;
+}
+
+:root {
+    --index-drawer-frost-bg: rgba(255,255,255,0.76);
+    --index-drawer-frost-brightness: 1;
+    --index-drawer-frame-stroke: rgba(0,0,0,0.42);
+    --index-drawer-crack-stroke: rgba(0,0,0,0.42);
+    --index-drawer-crack-detail-stroke: rgba(0,0,0,0.28);
+}
+
+.index-drawer-svg-host > .index-drawer-frost-mask {
+    background: var(--index-drawer-frost-bg);
+    backdrop-filter: blur(3px) saturate(0.92) brightness(var(--index-drawer-frost-brightness));
+    -webkit-backdrop-filter: blur(3px) saturate(0.92) brightness(var(--index-drawer-frost-brightness));
+    transition: background 280ms ease, backdrop-filter 280ms ease, -webkit-backdrop-filter 280ms ease;
+}
+
+.index-drawer-svg-host > svg .drawer-frame,
+.index-drawer-svg-host > svg .drawer-frame-detail,
+.index-drawer-crack-overpass > svg .drawer-frame,
+.index-drawer-crack-overpass > svg .drawer-frame-detail {
+    stroke: var(--index-drawer-frame-stroke) !important;
+    transition: stroke 280ms ease, opacity 280ms ease;
+}
+
+.index-drawer-svg-host > svg .drawer-crack,
+.index-drawer-crack-overpass > svg .drawer-crack {
+    stroke: var(--index-drawer-crack-stroke) !important;
+    transition: stroke 280ms ease, opacity 280ms ease;
+}
+
+.index-drawer-svg-host > svg .drawer-crack-detail,
+.index-drawer-crack-overpass > svg .drawer-crack-detail {
+    stroke: var(--index-drawer-crack-detail-stroke) !important;
+    transition: stroke 280ms ease, opacity 280ms ease;
+}
+
+@media (max-width: 1100px) {
+    .main-reader-tone-control.ruin-carved-tone {
+        right: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-reader-tone-control.ruin-carved-tone {
+        right: 128px;
+        width: 146px;
+    }
+
+    .ruin-carved-tone .main-reader-tone-track-wrap {
+        width: 146px;
+    }
+
+    .tone-step-buttons {
+        inset: 0 3px;
+    }
+
+    .tone-step-button {
+        width: 18px;
+        height: 18px;
+    }
+
+    .tone-eclipse-icon {
+        width: 11px;
+        height: 11px;
+    }
+
+    .tone-eclipse-1::after,
+    .tone-eclipse-3::after {
+        width: 11px;
+        height: 11px;
+    }
+
+    .tone-eclipse-1::after { left: 5px; }
+    .tone-eclipse-2::after { width: 5.5px; height: 11px; }
+    .tone-eclipse-3::after { left: -4px; }
+}
+
+
+/* v198 · force every authored Index Drawer line layer through reader-tone vars. */
+.index-drawer-svg-host > svg .drawer-frame-detail,
+.index-drawer-crack-overpass > svg .drawer-frame-detail {
+    stroke: var(--index-drawer-frame-stroke) !important;
+    transition: stroke 280ms ease, opacity 280ms ease;
+}
+
+/* v199 · separate authored Index Drawer SVG files: tone-safe linework */
+.index-drawer-svg-host > svg [id*="FRAME_LEFT"],
+.index-drawer-svg-host > svg [id*="FRAME_RIGHT"] {
+    opacity: 1 !important;
+}
+
+.index-drawer-svg-host > svg [id*="FRAME_LEFT"] path,
+.index-drawer-svg-host > svg [id*="FRAME_RIGHT"] path,
+.index-drawer-svg-host > svg [id*="FRAME_LEFT"] line,
+.index-drawer-svg-host > svg [id*="FRAME_RIGHT"] line,
+.index-drawer-svg-host > svg [id*="FRAME_LEFT"] polyline,
+.index-drawer-svg-host > svg [id*="FRAME_RIGHT"] polyline,
+.index-drawer-svg-host > svg [id*="FRAME_LEFT"] polygon,
+.index-drawer-svg-host > svg [id*="FRAME_RIGHT"] polygon {
+    fill: none !important;
+    stroke: var(--index-drawer-frame-stroke) !important;
+    stroke-opacity: 1 !important;
+    transition: stroke 280ms ease, opacity 280ms ease;
+}
+
+
+/* ==========================================================================
+   v200 · Index Drawer tone hard-sync / external-image fallback
+   ========================================================================== */
+.index-drawer-external-svg-fallback image {
+    filter: var(--index-drawer-fallback-filter, none);
+    transition: filter 280ms ease, opacity 280ms ease;
+}
+
+/* Inline clones get concrete RGBA strokes from JS. These selectors remain as
+   a CSS fallback if a browser temporarily paints before the JS sync runs. */
+.index-drawer-svg-host > svg [id*="FRAME_LEFT"],
+.index-drawer-svg-host > svg [id*="FRAME_RIGHT"],
+.index-drawer-svg-host > svg [id*="VARIANT_LEFT"],
+.index-drawer-svg-host > svg [id*="VARIANT_RIGHT"] {
+    opacity: 1 !important;
 }

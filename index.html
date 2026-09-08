@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css?v=92" />
+    <link rel="stylesheet" href="style.css?v=193" />
 
 </head>
 
@@ -53,23 +53,17 @@
     </div>
 
 
-    <!-- v77 · Shared reading-environment tone -->
-    <div id="main-reader-tone-control" class="main-reader-tone-control">
-        <span class="main-reader-tone-icon" aria-hidden="true">☼</span>
+    <!-- v197 · five-step eclipse reading-environment selector -->
+    <div id="main-reader-tone-control" class="main-reader-tone-control ruin-carved-tone" aria-label="阅读环境">
         <div class="main-reader-tone-track-wrap">
-            <input
-                id="main-reader-tone"
-                class="main-reader-tone-slider"
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value="0"
-                aria-label="阅读环境"
-            >
-            <span class="main-reader-tone-warm-mark" aria-hidden="true"></span>
+            <div id="main-reader-tone-steps" class="tone-step-buttons" role="radiogroup" aria-label="阅读环境">
+                <button type="button" class="tone-step-button" data-tone="0" data-tone-index="0" role="radio" aria-checked="true" aria-label="原始亮度"><span class="tone-eclipse-icon tone-eclipse-0" aria-hidden="true"></span></button>
+                <button type="button" class="tone-step-button" data-tone="22" data-tone-index="1" role="radio" aria-checked="false" aria-label="轻度护眼"><span class="tone-eclipse-icon tone-eclipse-1" aria-hidden="true"></span></button>
+                <button type="button" class="tone-step-button" data-tone="45" data-tone-index="2" role="radio" aria-checked="false" aria-label="护眼模式"><span class="tone-eclipse-icon tone-eclipse-2" aria-hidden="true"></span></button>
+                <button type="button" class="tone-step-button" data-tone="60" data-tone-index="3" role="radio" aria-checked="false" aria-label="深色模式"><span class="tone-eclipse-icon tone-eclipse-3" aria-hidden="true"></span></button>
+                <button type="button" class="tone-step-button" data-tone="100" data-tone-index="4" role="radio" aria-checked="false" aria-label="黑夜模式"><span class="tone-eclipse-icon tone-eclipse-4" aria-hidden="true"></span></button>
+            </div>
         </div>
-        <span class="main-reader-tone-icon" aria-hidden="true">☾</span>
     </div>
 
     <div id="title-language-wheel" class="title-wheel-container">
@@ -422,7 +416,7 @@
     <div id="drawer-mask" class="drawer-mask"></div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="script.js?v=92"></script>
+    <script src="script.js?v=193"></script>
 
     <div id="mobile-left-drawer" class="mobile-side-drawer">
         <div class="mobile-drawer-content" id="mobile-record-list"></div>
@@ -457,6 +451,7 @@
     <!-- Index drawer -->
     <div id="index-drawer">
         <div id="index-drawer-handle">
+            <div id="index-drawer-svg-handle" class="index-drawer-svg-host" aria-hidden="true"></div>
             <div class="frosted-shape"></div>
             <svg class="drawer-perspective-line bottom-left"><line x1="0" y1="100%" x2="100%" y2="0" /></svg>
             <svg class="drawer-perspective-line bottom-right"><line x1="100%" y1="100%" x2="0" y2="0" /></svg>
@@ -481,6 +476,7 @@
             </div>
         </div>
         <div id="index-drawer-content">
+            <div id="index-drawer-svg-body" class="index-drawer-svg-host" aria-hidden="true"></div>
             <div class="index-top-title">
                 <p data-i18n="index_top_title">《墟域图・遗构馆》收录漫游世界时所遇见的人造残构、荒地与被遗忘的地景，并持续建构一个不断扩张的废墟世界。</p>
             </div>

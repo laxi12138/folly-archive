@@ -208,6 +208,7 @@ window.isCompactViewport = isCompactViewport;
 // ============================================================================
 const READER_TONE_KEY = 'ruin-reader-tone';
 const READER_WARM_POINT = 45;
+const READER_TONE_STEPS = Object.freeze([0, 22, 45, 60, 100]);
 
 const READER_PALETTES = Object.freeze({
     paper: {
@@ -275,9 +276,8 @@ const READER_PALETTES = Object.freeze({
 });
 
 let readerToneValue = 0;
-let readerToneUiRaf = 0;
-let readerTonePending = null;
 let readerToneMapRefresh = null;
+let readerToneAnimationFrame = 0;
 
 function clampReaderTone(value) {
     return Math.max(0, Math.min(100, Number(value) || 0));
@@ -338,6 +338,62 @@ function saveReaderTone(value) {
     } catch (_) {}
 }
 
+function getNearestReaderToneStep(value) {
+    const tone = clampReaderTone(value);
+    return READER_TONE_STEPS.reduce((closest, step) =>
+        Math.abs(step - tone) < Math.abs(closest - tone) ? step : closest,
+    READER_TONE_STEPS[0]);
+}
+
+function updateReaderToneButtons(value) {
+    const group = document.getElementById('main-reader-tone-steps');
+    if (!group) return;
+
+    const nearest = getNearestReaderToneStep(value);
+    const buttons = [...group.querySelectorAll('.tone-step-button[data-tone]')];
+    buttons.forEach((button, index) => {
+        const step = clampReaderTone(button.dataset.tone);
+        const active = Math.abs(step - nearest) < 0.5;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-checked', active ? 'true' : 'false');
+        button.tabIndex = active ? 0 : -1;
+        button.dataset.active = active ? 'true' : 'false';
+        if (!button.dataset.toneIndex) button.dataset.toneIndex = String(index);
+    });
+    group.dataset.activeTone = String(nearest);
+    group.setAttribute('aria-valuetext', String(nearest));
+}
+
+function animateReaderToneTo(value, persist = true) {
+    const target = clampReaderTone(value);
+    if (readerToneAnimationFrame) cancelAnimationFrame(readerToneAnimationFrame);
+
+    const start = readerToneValue;
+    const delta = target - start;
+    const duration = Math.abs(delta) < 1 ? 0 : 260;
+
+    if (!duration) {
+        applyReaderTone(target, persist);
+        return;
+    }
+
+    const t0 = performance.now();
+    const ease = t => 1 - Math.pow(1 - t, 3);
+
+    const tick = now => {
+        const raw = Math.min(1, (now - t0) / duration);
+        const eased = ease(raw);
+        applyReaderTone(start + delta * eased, raw >= 1 && persist);
+        if (raw < 1) {
+            readerToneAnimationFrame = requestAnimationFrame(tick);
+        } else {
+            readerToneAnimationFrame = 0;
+            }
+    };
+
+    readerToneAnimationFrame = requestAnimationFrame(tick);
+}
+
 function applyReaderTone(value, persist = false) {
     const tone = clampReaderTone(value);
     readerToneValue = tone;
@@ -391,14 +447,34 @@ function applyReaderTone(value, persist = false) {
     root.style.setProperty('--reader-mine-active-hi', readerRgba(readerToneInterpolate(tone, 'mineActiveHi')));
     root.style.setProperty('--reader-mine-active-lo', readerRgba(readerToneInterpolate(tone, 'mineActiveLo')));
 
-    root.dataset.readerToneValue = String(Math.round(tone));
-    root.style.colorScheme = tone >= 72 ? 'dark' : 'light';
+    const toneUnit = tone / 100;
+    root.style.setProperty('--index-drawer-frost-bg', readerRgba(paper, readerToneMix(0.76, 0.82, toneUnit)));
+    root.style.setProperty('--index-drawer-frost-brightness', readerToneMix(1.00, 0.90, toneUnit).toFixed(4));
+    root.style.setProperty('--index-drawer-frame-stroke', readerRgba(lineStrong, readerToneMix(0.42, 0.84, toneUnit)));
+    root.style.setProperty('--index-drawer-crack-stroke', readerRgba(lineStrong, readerToneMix(0.36, 0.76, toneUnit)));
+    root.style.setProperty('--index-drawer-crack-detail-stroke', readerRgba(muted, readerToneMix(0.24, 0.56, toneUnit)));
 
-    const slider = document.getElementById('main-reader-tone');
-    if (slider && Number(slider.value) !== tone) {
-        slider.value = String(tone);
-    }
-    slider?.setAttribute('aria-valuenow', String(Math.round(tone)));
+    // External-SVG fallback cannot inherit CSS variables into the referenced
+    // file. Give that path its own tone filter so file:// / failed-fetch tests
+    // still invert the authored black linework in darker modes.
+    const drawerNightT = tone <= READER_WARM_POINT
+        ? 0
+        : (tone - READER_WARM_POINT) / (100 - READER_WARM_POINT);
+    const drawerWarmT = Math.min(1, tone / READER_WARM_POINT);
+    root.style.setProperty(
+        '--index-drawer-fallback-filter',
+        `sepia(${(0.18 * drawerWarmT * (1 - drawerNightT)).toFixed(3)}) ` +
+        `invert(${(0.92 * drawerNightT).toFixed(3)}) ` +
+        `brightness(${readerToneMix(1.00, 1.16, drawerNightT).toFixed(3)}) ` +
+        `contrast(${readerToneMix(1.00, 0.92, drawerNightT).toFixed(3)})`
+    );
+
+    root.dataset.readerToneValue = String(Math.round(tone));
+    root.style.setProperty('--reader-tone-pct', `${tone.toFixed(2)}%`);
+    root.style.setProperty('--reader-tone-unit', toneUnit.toFixed(4));
+    root.style.colorScheme = tone >= 67 ? 'dark' : 'light';
+
+    updateReaderToneButtons(tone);
 
     if (persist) saveReaderTone(tone);
     if (readerToneMapRefresh) readerToneMapRefresh();
@@ -408,52 +484,48 @@ function applyReaderTone(value, persist = false) {
     }));
 }
 
-function queueReaderTone(value) {
-    readerTonePending = clampReaderTone(value);
-    if (readerToneUiRaf) return;
-
-    readerToneUiRaf = requestAnimationFrame(() => {
-        readerToneUiRaf = 0;
-        const next = readerTonePending;
-        readerTonePending = null;
-        applyReaderTone(next, false);
-    });
-}
 
 function bindMainReaderTone() {
-    const slider = document.getElementById('main-reader-tone');
-    if (!slider) return;
+    const group = document.getElementById('main-reader-tone-steps');
+    if (!group) return;
 
-    slider.value = String(readerToneValue);
+    const buttons = [...group.querySelectorAll('.tone-step-button[data-tone]')];
+    updateReaderToneButtons(readerToneValue);
 
-    slider.addEventListener('input', () => {
-        queueReaderTone(slider.value);
-    });
+    buttons.forEach((button, index) => {
+        button.dataset.toneIndex = String(index);
 
-    slider.addEventListener('change', () => {
-        applyReaderTone(slider.value, true);
-    });
+        button.addEventListener('click', () => {
+            animateReaderToneTo(button.dataset.tone, true);
+        });
 
-    slider.addEventListener('pointerdown', () => {
-        slider.classList.add('is-dragging');
-    });
-
-    slider.addEventListener('pointerup', () => {
-        slider.classList.remove('is-dragging');
-        applyReaderTone(slider.value, true);
-    });
-
-    slider.addEventListener('pointercancel', () => {
-        slider.classList.remove('is-dragging');
-    });
-
-    slider.addEventListener('keydown', event => {
-        if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
-            requestAnimationFrame(() => applyReaderTone(slider.value, true));
-        }
+        button.addEventListener('keydown', event => {
+            const current = Number(button.dataset.toneIndex || index);
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                const next = buttons[Math.min(buttons.length - 1, current + 1)];
+                next?.focus();
+                animateReaderToneTo(next?.dataset.tone ?? button.dataset.tone, true);
+            } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                const prev = buttons[Math.max(0, current - 1)];
+                prev?.focus();
+                animateReaderToneTo(prev?.dataset.tone ?? button.dataset.tone, true);
+            } else if (event.key === 'Home') {
+                event.preventDefault();
+                buttons[0]?.focus();
+                animateReaderToneTo(buttons[0]?.dataset.tone ?? 0, true);
+            } else if (event.key === 'End') {
+                event.preventDefault();
+                buttons[buttons.length - 1]?.focus();
+                animateReaderToneTo(buttons[buttons.length - 1]?.dataset.tone ?? 100, true);
+            } else if (event.key === ' ' || event.key === 'Enter') {
+                event.preventDefault();
+                animateReaderToneTo(button.dataset.tone, true);
+            }
+        });
     });
 }
-
 // Apply the saved cross-page preference before Leaflet builds the atlas.
 applyReaderTone(readReaderTone(), false);
 bindMainReaderTone();
@@ -7820,6 +7892,2498 @@ function mountStaticThumbnail(
 }
 
 
+
+
+// ============================================================================
+// v94 · Ruin Fracture System
+// ----------------------------------------------------------------------------
+// Revised logic:
+// - remove accidental orthogonal "kinks"
+// - simplify compass to one controlled crack motif
+// - move lower damage emphasis from the hidden frame edge to the index drawer
+// - keep archive-doc damage restrained and hairline-free
+// - top perspective lines and drawer diagonals get localized chips instead of
+//   noisy branching
+// ============================================================================
+const RuinFractureSystem = (() => {
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    const sessionSeed = (() => {
+        try {
+            return crypto.getRandomValues(new Uint32Array(1))[0] >>> 0;
+        } catch (_) {
+            return ((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
+        }
+    })();
+
+    function hashString(str) {
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < str.length; i++) {
+            h ^= str.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+    }
+
+    function mulberry32(seed) {
+        let a = seed >>> 0;
+        return function () {
+            a |= 0;
+            a = (a + 0x6D2B79F5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    function rngFor(label) {
+        return mulberry32((sessionSeed ^ hashString(label)) >>> 0);
+    }
+
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const CONNECTING_RETURN_OPACITY = 0.70;
+    function pointAt(a, b, t) {
+        return {
+            x: lerp(a.x, b.x, t),
+            y: lerp(a.y, b.y, t)
+        };
+    }
+
+    function vec(a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        return { dx, dy, len, ux: dx / len, uy: dy / len };
+    }
+
+    function leftNormal(a, b) {
+        const v = vec(a, b);
+        return { x: -v.uy, y: v.ux };
+    }
+
+    function getCssNumber(name, fallback) {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        const num = parseFloat(value);
+        return Number.isFinite(num) ? num : fallback;
+    }
+
+    function makeSvg(className) {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.classList.add('ruin-fracture-overlay', className);
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        return svg;
+    }
+
+    function makePath(d, className, opacity = null) {
+        const path = document.createElementNS(SVG_NS, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('class', className);
+        if (opacity != null) path.style.opacity = String(opacity);
+        return path;
+    }
+
+    function polylineD(points) {
+        return points.map((p, i) =>
+            `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`
+        ).join(' ');
+    }
+
+    function addPolyline(svg, points, className, opacity = null) {
+        svg.appendChild(makePath(polylineD(points), className, opacity));
+    }
+
+    function ensureGlobalLayer() {
+        let layer = document.getElementById('ruin-fracture-global-layer');
+        if (!layer) {
+            layer = document.createElement('div');
+            layer.id = 'ruin-fracture-global-layer';
+            document.body.appendChild(layer);
+        }
+        return layer;
+    }
+
+    function setViewBox(svg, width, height) {
+        svg.setAttribute('viewBox', `0 0 ${Math.max(1, width)} ${Math.max(1, height)}`);
+    }
+
+    function clearTargetOverlays(target) {
+        if (!target) return;
+        target.querySelectorAll(':scope > .ruin-fracture-overlay').forEach(node => node.remove());
+    }
+
+    function organicPoints(start, end, rng, amplitude = 12, segments = 5) {
+        const v = vec(start, end);
+        const normal = { x: -v.uy, y: v.ux };
+        const pts = [start];
+        for (let i = 1; i < segments; i++) {
+            const t = i / segments;
+            const base = pointAt(start, end, t);
+            const weight = Math.sin(Math.PI * t);
+            const offset = (rng() - 0.5) * 2 * amplitude * weight;
+            pts.push({
+                x: base.x + normal.x * offset,
+                y: base.y + normal.y * offset
+            });
+        }
+        pts.push(end);
+        return pts;
+    }
+
+    function addSmoothCrack(svg, start, end, rng, opts = {}) {
+        const points = organicPoints(
+            start,
+            end,
+            rng,
+            opts.amplitude ?? 10,
+            opts.segments ?? 5
+        );
+        addPolyline(svg, points, opts.className || 'ruin-fracture-crack', opts.opacity ?? 0.58);
+        return points;
+    }
+
+    function ceramicCrackPoints(start, end, rng, opts = {}) {
+        const v = vec(start, end);
+        if (v.len < 2) return [start, end];
+
+        const normal = { x: -v.uy, y: v.ux };
+        const tangent = { x: v.ux, y: v.uy };
+        const segments = Math.max(4, opts.segments ?? 5);
+        const amplitude = opts.amplitude ?? 8;
+        const curveDir = opts.curveDir ?? (rng() < 0.5 ? -1 : 1);
+
+        // v126 · ceramic / glaze crack:
+        // a soft continuous bow is the dominant gesture, with occasional
+        // short mineral-like deviations so it does not become a perfect spline.
+        const curveAmount =
+            (opts.curveAmount ?? (amplitude * (0.42 + rng() * 0.30))) * curveDir;
+        const detailScale = opts.detailScale ?? 0.11;
+        const stoneBias = opts.stoneBias ?? 0.22;
+        const tangentScale = opts.tangentScale ?? 0.055;
+
+        const pts = [start];
+        let mineralDrift = 0;
+
+        for (let i = 1; i < segments; i++) {
+            const t = i / segments;
+            const base = pointAt(start, end, t);
+            const weight = Math.sin(Math.PI * t);
+
+            // Soft ceramic bow: widest around the middle, gently easing into edges.
+            const eased = Math.pow(weight, 0.92);
+            const bow = curveAmount * eased;
+
+            // Fine glaze irregularity: low-amplitude, mostly following one side.
+            const glazeNoise =
+                curveDir *
+                amplitude *
+                (0.018 + rng() * detailScale) *
+                eased;
+
+            // Stone/mineral texture: rare small plane-shift that persists for
+            // one or two points, producing a blunt natural kink instead of a spike.
+            if (rng() < stoneBias) {
+                mineralDrift +=
+                    (rng() - 0.48) *
+                    amplitude *
+                    (0.10 + rng() * 0.10);
+            } else {
+                mineralDrift *= 0.52;
+            }
+            mineralDrift = Math.max(
+                -amplitude * 0.26,
+                Math.min(amplitude * 0.26, mineralDrift)
+            );
+
+            const tangentJitter =
+                (rng() - 0.5) *
+                amplitude *
+                tangentScale *
+                eased;
+
+            pts.push({
+                x:
+                    base.x +
+                    normal.x * (bow + glazeNoise + mineralDrift) +
+                    tangent.x * tangentJitter,
+                y:
+                    base.y +
+                    normal.y * (bow + glazeNoise + mineralDrift) +
+                    tangent.y * tangentJitter
+            });
+        }
+
+        pts.push(end);
+        return pts;
+    }
+
+    function addCeramicCrack(svg, start, end, rng, opts = {}) {
+        const points = ceramicCrackPoints(start, end, rng, opts);
+        addPolyline(svg, points, opts.className || 'ruin-fracture-crack', opts.opacity ?? 0.58);
+        return points;
+    }
+
+    function stoneEdgeCrackPoints(start, end, rng, opts = {}) {
+        const v = vec(start, end);
+        if (v.len < 2) return [start, end];
+
+        const normal = { x: -v.uy, y: v.ux };
+        const tangent = { x: v.ux, y: v.uy };
+        const segments = Math.max(3, opts.segments ?? 4);
+        const amplitude = opts.amplitude ?? 3.1;
+        const curveDir = opts.curveDir ?? (rng() < 0.5 ? -1 : 1);
+        const quant = opts.quant ?? 4.2;
+        const pts = [start];
+        let stoneDrift = (rng() - 0.5) * amplitude * 0.30;
+
+        for (let i = 1; i < segments; i++) {
+            const t = i / segments;
+            const base = pointAt(start, end, t);
+            const edgeWeight = Math.pow(1 - t, 0.48);
+            const bow = curveDir * amplitude * 0.18 * Math.sin(Math.PI * Math.min(1, t * 0.92));
+
+            if (rng() < 0.74) {
+                stoneDrift += (rng() - 0.46) * amplitude * (0.36 + edgeWeight * 0.22);
+            } else {
+                stoneDrift *= 0.58;
+            }
+            stoneDrift = Math.max(-amplitude * 0.95, Math.min(amplitude * 0.95, stoneDrift));
+
+            const facetedOffset = Math.round((bow + stoneDrift) * quant) / quant;
+            const tangentJitter = (rng() - 0.5) * amplitude * 0.14 * edgeWeight;
+
+            pts.push({
+                x: base.x + normal.x * facetedOffset + tangent.x * tangentJitter,
+                y: base.y + normal.y * facetedOffset + tangent.y * tangentJitter
+            });
+        }
+
+        pts.push(end);
+        return pts;
+    }
+
+    function addStoneEdgeCrack(svg, start, end, rng, opts = {}) {
+        const points = stoneEdgeCrackPoints(start, end, rng, opts);
+        addPolyline(svg, points, opts.className || 'ruin-fracture-crack ruin-fracture-edge-stone', opts.opacity ?? 0.44);
+        return points;
+    }
+
+    function addBranch(svg, root, end, rng, opts = {}) {
+        const pts = organicPoints(
+            root,
+            end,
+            rng,
+            opts.amplitude ?? 8,
+            opts.segments ?? 3
+        );
+        addPolyline(svg, pts, opts.className || 'ruin-fracture-crack ruin-fracture-branch', opts.opacity ?? 0.42);
+    }
+
+    function addBrokenSegment(svg, a, b, rng, opts = {}) {
+        const v = vec(a, b);
+        if (v.len < 8) {
+            addPolyline(svg, [a, b], opts.className || 'ruin-fracture-border', opts.opacity ?? 0.86);
+            return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        }
+
+        const n = leftNormal(a, b);
+        const sign = opts.normalSign ?? 1;
+        const width = Math.min(opts.width ?? 12, v.len * 0.22);
+        const halfT = (width * 0.5) / v.len;
+        const t = Math.max(0.16, Math.min(0.84, opts.t ?? (0.35 + rng() * 0.30)));
+        const depth = opts.depth ?? 8;
+        const p1 = pointAt(a, b, t - halfT);
+        const p2 = pointAt(a, b, t + halfT);
+        const mid = pointAt(a, b, t);
+
+        const tangentJitter = (rng() - 0.5) * width * 0.28;
+        const tangent = { x: v.ux, y: v.uy };
+
+        const q1 = {
+            x: p1.x + tangent.x * tangentJitter * 0.35 + n.x * sign * depth * 0.42,
+            y: p1.y + tangent.y * tangentJitter * 0.35 + n.y * sign * depth * 0.42
+        };
+        const qm = {
+            x: mid.x + tangent.x * tangentJitter * 0.08 + n.x * sign * depth,
+            y: mid.y + tangent.y * tangentJitter * 0.08 + n.y * sign * depth
+        };
+        const q2 = {
+            x: p2.x - tangent.x * tangentJitter * 0.28 + n.x * sign * depth * 0.50,
+            y: p2.y - tangent.y * tangentJitter * 0.28 + n.y * sign * depth * 0.50
+        };
+
+        const points = [a, p1, q1, qm, q2, p2, b];
+        addPolyline(svg, points, opts.className || 'ruin-fracture-border', opts.opacity ?? 0.86);
+        return qm;
+    }
+
+    function addNaturalChipSegment(svg, a, b, rng, opts = {}) {
+        const v = vec(a, b);
+        if (v.len < 12) {
+            addPolyline(svg, [a, b], opts.className || 'ruin-fracture-border', opts.opacity ?? 0.86);
+            return null;
+        }
+
+        const n = leftNormal(a, b);
+        const sign = opts.normalSign ?? 1;
+        const width = Math.min(opts.width ?? 46, v.len * 0.42);
+        const halfT = (width * 0.5) / v.len;
+        const t = Math.max(0.18, Math.min(0.82, opts.t ?? (0.30 + rng() * 0.40)));
+        const depth = opts.depth ?? 4.8;
+        const lip = opts.lip ?? 0.12;
+
+        const p1 = pointAt(a, b, t - halfT);
+        const p2 = pointAt(a, b, t + halfT);
+        const tangent = { x: v.ux, y: v.uy };
+        const lead1 = pointAt(a, p1, Math.max(0, 1 - lip));
+        const lead2 = pointAt(p2, b, Math.min(1, lip));
+
+        // Edge bite logic: the missing piece can start with a tiny vertical-ish
+        // drop on either side, or on both sides.  The drop is deliberately
+        // shallow so it reads as a chipped edge rather than a deep notch.
+        const modeRoll = rng();
+        const biteStart = modeRoll < 0.72;   // most variants include the start bite
+        const biteEnd = modeRoll > 0.28;     // overlap produces a sizeable "both" zone
+        const startBiteDepth = biteStart ? depth * (0.34 + rng() * 0.20) : 0;
+        const endBiteDepth = biteEnd ? depth * (0.30 + rng() * 0.20) : 0;
+
+        const entry1 = biteStart ? {
+            x: p1.x + tangent.x * width * (0.018 + rng() * 0.016) + n.x * sign * startBiteDepth,
+            y: p1.y + tangent.y * width * (0.018 + rng() * 0.016) + n.y * sign * startBiteDepth
+        } : p1;
+
+        const entry2 = biteEnd ? {
+            x: p2.x - tangent.x * width * (0.018 + rng() * 0.016) + n.x * sign * endBiteDepth,
+            y: p2.y - tangent.y * width * (0.018 + rng() * 0.016) + n.y * sign * endBiteDepth
+        } : p2;
+
+        // Many very small facets across a mostly flat-bottomed loss.  The
+        // centre stays shallow and irregular, while the edge bites make the
+        // subtraction legible at a glance.
+        const facetCount = 7 + Math.floor(rng() * 3); // 7–9 tiny facets
+        const facets = [];
+
+        for (let i = 1; i < facetCount; i++) {
+            const u = i / facetCount;
+            const base = pointAt(p1, p2, u);
+
+            // Broad plateau rather than a smooth bowl: most of the missing
+            // strip sits at a similar shallow depth with tiny chipped variation.
+            const plateau = 0.62 + 0.14 * Math.sin(Math.PI * u);
+            const asymmetry = 0.90 + (rng() - 0.5) * 0.20;
+            const micro = (rng() - 0.5) * depth * 0.14;
+            const localDepth = Math.max(
+                depth * 0.34,
+                depth * plateau * asymmetry + micro
+            );
+
+            const tangentJitter = (rng() - 0.5) * width * 0.012;
+            facets.push({
+                x: base.x + tangent.x * tangentJitter + n.x * sign * localDepth,
+                y: base.y + tangent.y * tangentJitter + n.y * sign * localDepth
+            });
+        }
+
+        addPolyline(
+            svg,
+            [a, lead1, p1, entry1, ...facets, entry2, p2, lead2, b],
+            opts.className || 'ruin-fracture-border',
+            opts.opacity ?? 0.86
+        );
+
+        if (opts.addReturnLine) {
+            const returnInset = opts.returnInset ?? Math.max(1.0, depth * 0.22);
+            const c1 = {
+                x: p1.x + tangent.x * width * 0.26 + n.x * sign * returnInset,
+                y: p1.y + tangent.y * width * 0.26 + n.y * sign * returnInset
+            };
+            const c2 = {
+                x: p1.x + tangent.x * width * 0.74 + n.x * sign * returnInset,
+                y: p1.y + tangent.y * width * 0.74 + n.y * sign * returnInset
+            };
+            const returnPath = [
+                `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`,
+                `C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
+            ].join(' ');
+            svg.appendChild(makePath(
+                returnPath,
+                opts.returnClassName || 'ruin-fracture-crack ruin-fracture-chip-return',
+                opts.returnOpacity ?? CONNECTING_RETURN_OPACITY
+            ));
+        }
+
+        return { p1, p2, entry1, entry2, facets, tangent, normal: n, sign, width, depth, edgeStart: a, edgeEnd: b };
+    }
+
+    function addTreeCorner(svg, roots, joint, trunkEnd, rng, opts = {}) {
+        addSmoothCrack(svg, roots[0], joint, rng, {
+            amplitude: opts.rootAmplitude ?? 8,
+            segments: opts.rootSegments ?? 4,
+            opacity: opts.opacity ?? 0.55
+        });
+        addSmoothCrack(svg, roots[1], joint, rng, {
+            amplitude: opts.rootAmplitude ?? 8,
+            segments: opts.rootSegments ?? 4,
+            opacity: opts.opacity ?? 0.55
+        });
+
+        const trunk = addSmoothCrack(svg, joint, trunkEnd, rng, {
+            amplitude: opts.trunkAmplitude ?? 10,
+            segments: opts.trunkSegments ?? 5,
+            opacity: (opts.opacity ?? 0.55) + 0.03
+        });
+
+        const pA = trunk[Math.max(1, Math.floor(trunk.length * 0.35))];
+        const pB = trunk[Math.max(1, Math.floor(trunk.length * 0.55))];
+
+        if (opts.branch1) addBranch(svg, pA, opts.branch1, rng, { amplitude: 6, segments: 3, opacity: 0.40 });
+        if (opts.branch2) addBranch(svg, pB, opts.branch2, rng, { amplitude: 5, segments: 3, opacity: 0.34 });
+    }
+    function addTopOuterChip(svg, a, b, rng, opts = {}) {
+        const v = vec(a, b);
+        if (v.len < 24) {
+            addPolyline(svg, [a, b], opts.className || 'ruin-fracture-border', opts.opacity ?? 0.86);
+            return { x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5, side: 'left', towardSide: -1 };
+        }
+
+        const side = opts.side || (rng() < 0.5 ? 'left' : 'right');
+        const t = side === 'left'
+            ? (opts.t ?? (0.18 + rng() * 0.14))
+            : (opts.t ?? (0.68 + rng() * 0.14));
+
+        const width = Math.min(opts.width ?? (22 + rng() * 10), v.len * 0.15);
+        const depth = opts.depth ?? (6.6 + rng() * 2.2);
+        const halfT = (width * 0.5) / v.len;
+        const p1 = pointAt(a, b, Math.max(0.05, t - halfT));
+        const p2 = pointAt(a, b, Math.min(0.95, t + halfT));
+        const tangent = { x: v.ux, y: v.uy };
+        const towardSide = side === 'left' ? -1 : 1;
+        const jitter = () => (rng() - 0.5) * Math.min(0.55, width * 0.014);
+
+        // A small chipped-tile profile: one missing corner-like bite, slightly
+        // asymmetric shoulders, and a sharp root that launches the outward crack.
+        const leftLeadT = 0.16 + rng() * 0.06;
+        const leftShelfT = 0.29 + rng() * 0.07;
+        const rootT = side === 'left'
+            ? (0.39 + rng() * 0.06)
+            : (0.58 + rng() * 0.06);
+        const rightShelfT = rootT + (0.11 + rng() * 0.05);
+        const rightExitT = rightShelfT + (0.10 + rng() * 0.05);
+
+        const shallowA = 0.55 + rng() * 0.50;
+        const shallowB = 0.95 + rng() * 0.70;
+        const shoulderA = 2.10 + rng() * 0.85;
+        const shoulderB = 1.55 + rng() * 0.70;
+        const rootDepth = depth * (1.00 + rng() * 0.16);
+
+        const pts = [a, p1];
+        const pLead = {
+            x: p1.x + tangent.x * (width * leftLeadT + jitter()),
+            y: p1.y - shallowA
+        };
+        const pShelf = {
+            x: p1.x + tangent.x * (width * leftShelfT + jitter()),
+            y: p1.y - shoulderA
+        };
+        const pPreRoot = {
+            x: p1.x + tangent.x * (width * Math.max(leftShelfT + 0.05, rootT - (0.06 + rng() * 0.02)) + jitter()),
+            y: p1.y - (rootDepth * (0.68 + rng() * 0.08))
+        };
+        const crackRoot = {
+            x: p1.x + tangent.x * (width * rootT + jitter()),
+            y: p1.y - rootDepth
+        };
+        const pPostRoot = {
+            x: p1.x + tangent.x * (width * Math.min(0.88, rightShelfT - (0.02 + rng() * 0.015)) + jitter()),
+            y: p1.y - (rootDepth * (0.58 + rng() * 0.10))
+        };
+        const pRightShelf = {
+            x: p1.x + tangent.x * (width * Math.min(0.90, rightShelfT) + jitter()),
+            y: p1.y - shoulderB
+        };
+        const pRightExit = {
+            x: p1.x + tangent.x * (width * Math.min(0.93, rightExitT) + jitter()),
+            y: p1.y - shallowB
+        };
+
+        pts.push(pLead, pShelf, pPreRoot, crackRoot, pPostRoot, pRightShelf, pRightExit, p2, b);
+        addPolyline(svg, pts, opts.className || 'ruin-fracture-border', opts.opacity ?? 0.88);
+
+        if (opts.addReturnLine) {
+            const returnLift = opts.returnLift ?? Math.max(1.1, depth * 0.20);
+            const c1 = {
+                x: p1.x + tangent.x * width * 0.28,
+                y: p1.y - returnLift
+            };
+            const c2 = {
+                x: p1.x + tangent.x * width * 0.72,
+                y: p1.y - returnLift
+            };
+            const returnPath = [
+                `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`,
+                `C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
+            ].join(' ');
+            svg.appendChild(makePath(
+                returnPath,
+                opts.returnClassName || 'ruin-fracture-crack ruin-fracture-chip-return',
+                opts.returnOpacity ?? CONNECTING_RETURN_OPACITY
+            ));
+        }
+
+        return { ...crackRoot, side, towardSide, p1, p2 };
+    }
+
+    function renderMainFrame() {
+
+
+
+        const target = document.getElementById('main-viewport-frame');
+        if (!target) return;
+
+        clearTargetOverlays(target);
+        const rect = target.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        const rng = rngFor('main-frame-v132');
+
+        const svg = makeSvg('ruin-fracture-main-frame');
+        setViewBox(svg, w, h);
+
+        const topLeft = { x: 0.5, y: 0.5 };
+        const topRight = { x: w - 0.5, y: 0.5 };
+        const bottomRight = { x: w - 0.5, y: h + 2.5 };
+        const bottomLeft = { x: 0.5, y: h + 2.5 };
+
+        // v169 · the upper slanted-edge notch should now appear ONLY on the LEFT side.
+        // Keep its profile/position/style random, but allow a deeper maximum bite so
+        // some refreshes feel more dramatically fractured.
+        const titleSide = 'left';
+        const topNotchT = 0.10 + rng() * 0.24;
+        const topNotchWidth = 20 + rng() * 16;
+        const topNotchDepth = 6.8 + rng() * 5.0;
+        const notchTip = addTopOuterChip(svg, topLeft, topRight, rngFor(`main-frame-top-notch-v124-${titleSide}`), {
+            side: titleSide,
+            t: topNotchT,
+            width: topNotchWidth,
+            depth: topNotchDepth,
+            opacity: 0.88,
+            addReturnLine: true,
+            returnLift: 0.72 + rng() * 0.22,
+            returnOpacity: CONNECTING_RETURN_OPACITY
+        });
+
+        // v148 · lower-right chipped notch + outward tree fracture.
+        // Flip the mouth so it opens to the RIGHT/outside, and make the chip
+        // slightly wider/larger so it reads like a stone spall rather than an
+        // inward bite. The crack should launch from that outer mouth.
+        const rightNotchRng = rngFor('main-frame-right-lower-notch-v174');
+        // v174 · lower-right opening: rougher stone-spall logic.
+        // Keep the broad shallow broken plane, but introduce uneven stone facets,
+        // stronger upper/lower stress imbalance, and a small pointed outlet that
+        // launches the tree crack.  The outline should feel fractured, not drawn.
+        const rightNotchY = h * (0.65 + rightNotchRng() * 0.20);
+        const notchWidthScale = 2.0 + rightNotchRng() * 2.2;
+        const baseHalfH = 8.4 + rightNotchRng() * 3.6;
+        const notchUpperH = baseHalfH * notchWidthScale * (0.54 + rightNotchRng() * 0.72);
+        const notchLowerH = baseHalfH * notchWidthScale * (0.50 + rightNotchRng() * 0.78);
+        const notchTotalH = notchUpperH + notchLowerH;
+
+        const shallowDepth = 3.0 + rightNotchRng() * 3.0;
+        const pointExtraDepth = 1.2 + rightNotchRng() * 3.4;
+        const notchTipT = 0.16 + rightNotchRng() * 0.66;
+        const notchTipY = (rightNotchY - notchUpperH) + notchTotalH * notchTipT;
+        const tipHalfH = Math.max(1.7, Math.min(4.4, notchTotalH * (0.022 + rightNotchRng() * 0.030)));
+
+        const stressMode = rightNotchRng();
+        const upperStress = stressMode < 0.36
+            ? (1.32 + rightNotchRng() * 0.48)
+            : stressMode < 0.70
+                ? (0.90 + rightNotchRng() * 0.24)
+                : (1.22 + rightNotchRng() * 0.42);
+        const lowerStress = stressMode < 0.36
+            ? (0.92 + rightNotchRng() * 0.22)
+            : stressMode < 0.70
+                ? (1.36 + rightNotchRng() * 0.50)
+                : (1.18 + rightNotchRng() * 0.44);
+
+        const upperShelfA = shallowDepth * (0.30 + rightNotchRng() * 0.22);
+        const upperShelfB = shallowDepth * (0.58 + rightNotchRng() * 0.20) * upperStress;
+        const upperShelfC = shallowDepth * (0.82 + rightNotchRng() * 0.18) * upperStress;
+        const lowerShelfA = shallowDepth * (0.28 + rightNotchRng() * 0.24);
+        const lowerShelfB = shallowDepth * (0.56 + rightNotchRng() * 0.22) * lowerStress;
+        const lowerShelfC = shallowDepth * (0.80 + rightNotchRng() * 0.20) * lowerStress;
+
+        const tipDepth = shallowDepth + pointExtraDepth * (1.00 + Math.max(upperStress, lowerStress) * (0.28 + rightNotchRng() * 0.24));
+        const upperPocketX = w + shallowDepth + pointExtraDepth * upperStress;
+        const lowerPocketX = w + shallowDepth + pointExtraDepth * lowerStress;
+
+        const rightNotchTop = {
+            x: w - 0.5,
+            y: rightNotchY - notchUpperH
+        };
+
+        // Upper side: multiple short stone facets with unequal lengths/depths.
+        const rightNotchUpperFaceA = {
+            x: w + Math.max(0.7, upperShelfA * (0.52 + rightNotchRng() * 0.22)),
+            y: rightNotchTop.y + notchTotalH * (0.035 + rightNotchRng() * 0.050)
+        };
+        const rightNotchUpperFaceB = {
+            x: w + upperShelfA,
+            y: rightNotchTop.y + notchTotalH * (0.090 + rightNotchRng() * 0.075)
+        };
+        const rightNotchUpperFaceC = {
+            x: w + upperShelfB,
+            y: rightNotchTop.y + notchTotalH * (0.140 + rightNotchRng() * 0.095)
+        };
+        const rightNotchUpperShoulder = {
+            x: w + upperShelfC + (-0.8 + rightNotchRng() * 1.4),
+            y: Math.max(
+                rightNotchUpperFaceC.y + 0.7,
+                notchTipY - tipHalfH - notchTotalH * (0.045 + rightNotchRng() * 0.080)
+            )
+        };
+        const rightNotchMidShoulder = {
+            x: Math.max(w + upperShelfC, upperPocketX - (0.8 + rightNotchRng() * 1.9)),
+            y: notchTipY - tipHalfH + (-0.8 + rightNotchRng() * 1.2)
+        };
+
+        const rightNotchRoot = {
+            x: w + tipDepth,
+            y: notchTipY + (-0.55 + rightNotchRng() * 1.10)
+        };
+
+        // Lower side is independently stressed so one side can feel heavier/deeper.
+        const rightNotchLowerKnee = {
+            x: Math.max(w + lowerShelfC, lowerPocketX - (0.7 + rightNotchRng() * 2.0)),
+            y: notchTipY + tipHalfH + (-0.25 + rightNotchRng() * 1.00)
+        };
+        const rightNotchLowerShoulder = {
+            x: w + lowerShelfC + (-1.0 + rightNotchRng() * 1.7),
+            y: Math.min(
+                rightNotchY + notchLowerH - 1.2,
+                notchTipY + tipHalfH + notchTotalH * (0.045 + rightNotchRng() * 0.090)
+            )
+        };
+        const rightNotchLowerFaceC = {
+            x: w + lowerShelfB,
+            y: rightNotchY + notchLowerH - notchTotalH * (0.135 + rightNotchRng() * 0.100)
+        };
+        const rightNotchLowerFaceB = {
+            x: w + lowerShelfA,
+            y: rightNotchY + notchLowerH - notchTotalH * (0.085 + rightNotchRng() * 0.080)
+        };
+        const rightNotchLowerFaceA = {
+            x: w + Math.max(0.7, lowerShelfA * (0.50 + rightNotchRng() * 0.24)),
+            y: rightNotchY + notchLowerH - notchTotalH * (0.032 + rightNotchRng() * 0.050)
+        };
+        const rightNotchBottom = {
+            x: w - 0.5,
+            y: rightNotchY + notchLowerH
+        };
+
+        // Keep the lower-right chip outline ordered so random values do not make
+        // neighboring segments fold back into each other. The earlier issue where
+        // lines looked crowded / curled came from independent random Y and X offsets
+        // occasionally crossing over. These monotonic clamps preserve the roughness
+        // but stop self-intersection.
+        const rightNotchSeq = [
+            rightNotchTop,
+            rightNotchUpperFaceA,
+            rightNotchUpperFaceB,
+            rightNotchUpperFaceC,
+            rightNotchUpperShoulder,
+            rightNotchMidShoulder,
+            rightNotchRoot,
+            rightNotchLowerKnee,
+            rightNotchLowerShoulder,
+            rightNotchLowerFaceC,
+            rightNotchLowerFaceB,
+            rightNotchLowerFaceA,
+            rightNotchBottom
+        ];
+        const rightNotchMinGap = Math.max(0.55, notchTotalH * 0.028);
+        for (let i = 1; i < rightNotchSeq.length; i++) {
+            rightNotchSeq[i].y = Math.max(rightNotchSeq[i].y, rightNotchSeq[i - 1].y + rightNotchMinGap);
+        }
+        for (let i = rightNotchSeq.length - 2; i >= 0; i--) {
+            rightNotchSeq[i].y = Math.min(rightNotchSeq[i].y, rightNotchSeq[i + 1].y - rightNotchMinGap);
+        }
+
+        const outwardHalf = [
+            rightNotchUpperFaceA,
+            rightNotchUpperFaceB,
+            rightNotchUpperFaceC,
+            rightNotchUpperShoulder,
+            rightNotchMidShoulder,
+            rightNotchRoot
+        ];
+        for (let i = 1; i < outwardHalf.length; i++) {
+            outwardHalf[i].x = Math.max(outwardHalf[i].x, outwardHalf[i - 1].x + 0.32);
+        }
+
+        const inwardHalf = [
+            rightNotchRoot,
+            rightNotchLowerKnee,
+            rightNotchLowerShoulder,
+            rightNotchLowerFaceC,
+            rightNotchLowerFaceB,
+            rightNotchLowerFaceA,
+            rightNotchBottom
+        ];
+        for (let i = 1; i < inwardHalf.length; i++) {
+            inwardHalf[i].x = Math.min(inwardHalf[i].x, inwardHalf[i - 1].x - 0.30);
+        }
+        rightNotchLowerFaceA.x = Math.max(rightNotchLowerFaceA.x, w + 0.65);
+        rightNotchBottom.x = w - 0.5;
+
+        // v167 · upper-right attached pit made larger and more stone-like:
+        // sharper shoulders, a shallow-to-deep transition, and deliberately
+        // unbalanced depth between the upper and lower halves.
+        const upperPitRng = rngFor('main-frame-right-upper-attached-crack-v167');
+        const upperPitY = 104 + upperPitRng() * Math.min(18, h * 0.026);
+        const upperPitScale = 0.82;
+        const upperPitHalfH = (24 + upperPitRng() * 6.6) * upperPitScale;
+        const upperPitBulge = (19.5 + upperPitRng() * 6.4) * upperPitScale;
+
+        const upperPitStart = {
+            x: w - 0.5,
+            y: upperPitY - upperPitHalfH
+        };
+        const upperPitEnd = {
+            x: w - 0.5,
+            y: upperPitY + upperPitHalfH
+        };
+
+        // Upper section stays relatively shallow, then the profile cuts deeper
+        // through the middle/lower portion so the depth feels uneven.
+        const pitOuterA = { x: w + upperPitBulge * 0.12, y: upperPitY - upperPitHalfH * 0.92 };
+        const pitOuterB = { x: w + upperPitBulge * 0.34, y: upperPitY - upperPitHalfH * 0.62 };
+        const pitOuterC = { x: w + upperPitBulge * 0.50, y: upperPitY - upperPitHalfH * 0.30 };
+        const pitOuterD = { x: w + upperPitBulge * 0.88, y: upperPitY + upperPitHalfH * 0.02 };
+        const pitOuterE = { x: w + upperPitBulge * 1.04, y: upperPitY + upperPitHalfH * 0.24 };
+        const pitOuterF = { x: w + upperPitBulge * 0.90, y: upperPitY + upperPitHalfH * 0.52 };
+        const pitOuterG = { x: w + upperPitBulge * 0.48, y: upperPitY + upperPitHalfH * 0.88 };
+
+        const upperPitPath = [
+            `M ${topRight.x.toFixed(2)} ${topRight.y.toFixed(2)}`,
+            `L ${upperPitStart.x.toFixed(2)} ${upperPitStart.y.toFixed(2)}`,
+            // Keep the entry hard and restrained, then sink deeper toward the lower half.
+            `Q ${(w + 0.8).toFixed(2)} ${(upperPitY - upperPitHalfH * 0.98).toFixed(2)}, ${pitOuterA.x.toFixed(2)} ${pitOuterA.y.toFixed(2)}`,
+            `L ${pitOuterB.x.toFixed(2)} ${pitOuterB.y.toFixed(2)}`,
+            `L ${pitOuterC.x.toFixed(2)} ${pitOuterC.y.toFixed(2)}`,
+            `L ${pitOuterD.x.toFixed(2)} ${pitOuterD.y.toFixed(2)}`,
+            `L ${pitOuterE.x.toFixed(2)} ${pitOuterE.y.toFixed(2)}`,
+            `L ${pitOuterF.x.toFixed(2)} ${pitOuterF.y.toFixed(2)}`,
+            `Q ${(w + upperPitBulge * 0.24).toFixed(2)} ${(upperPitY + upperPitHalfH * 0.96).toFixed(2)}, ${pitOuterG.x.toFixed(2)} ${pitOuterG.y.toFixed(2)}`,
+            `Q ${(w + 1.0).toFixed(2)} ${(upperPitY + upperPitHalfH * 1.02).toFixed(2)}, ${upperPitEnd.x.toFixed(2)} ${upperPitEnd.y.toFixed(2)}`,
+            `L ${rightNotchTop.x.toFixed(2)} ${rightNotchTop.y.toFixed(2)}`
+        ].join(' ');
+
+        svg.appendChild(makePath(upperPitPath, 'ruin-fracture-border ruin-fracture-upper-attached-pit', 0.92));
+
+        // Inner return line hugs the border closely, but also becomes slightly deeper
+        // in the lower half so the two sides do not feel symmetrical.
+        const returnBulgeTop = 0.9 + upperPitRng() * 0.45;
+        const returnBulgeMid = 1.4 + upperPitRng() * 0.55;
+        const returnBulgeLow = 1.15 + upperPitRng() * 0.40;
+        const upperPitReturnPath = [
+            `M ${upperPitStart.x.toFixed(2)} ${upperPitStart.y.toFixed(2)}`,
+            `C ${(w + returnBulgeTop).toFixed(2)} ${(upperPitY - upperPitHalfH * 0.80).toFixed(2)}, ${(w + returnBulgeMid).toFixed(2)} ${(upperPitY - upperPitHalfH * 0.18).toFixed(2)}, ${(w + returnBulgeMid * 0.96).toFixed(2)} ${(upperPitY + upperPitHalfH * 0.22).toFixed(2)}`,
+            `C ${(w + returnBulgeLow).toFixed(2)} ${(upperPitY + upperPitHalfH * 0.54).toFixed(2)}, ${(w + returnBulgeTop * 0.74).toFixed(2)} ${(upperPitY + upperPitHalfH * 0.90).toFixed(2)}, ${upperPitEnd.x.toFixed(2)} ${upperPitEnd.y.toFixed(2)}`
+        ].join(' ');
+
+        svg.appendChild(makePath(upperPitReturnPath, 'ruin-fracture-crack ruin-fracture-upper-attached-return', CONNECTING_RETURN_OPACITY));
+
+        addPolyline(svg, [
+            rightNotchTop,
+            rightNotchUpperFaceA,
+            rightNotchUpperFaceB,
+            rightNotchUpperFaceC,
+            rightNotchUpperShoulder,
+            rightNotchMidShoulder,
+            rightNotchRoot,
+            rightNotchLowerKnee,
+            rightNotchLowerShoulder,
+            rightNotchLowerFaceC,
+            rightNotchLowerFaceB,
+            rightNotchLowerFaceA,
+            rightNotchBottom
+        ], 'ruin-fracture-border ruin-fracture-damaged', 0.92);
+
+        // Return line stays extremely close to the original frame edge even though
+        // the outer broken shelf is much wider.
+        const lowerReturnBulge = 0.85 + rightNotchRng() * 0.48;
+        const lowerReturnPath = [
+            `M ${rightNotchTop.x.toFixed(2)} ${rightNotchTop.y.toFixed(2)}`,
+            `C ${(w + lowerReturnBulge * 0.82).toFixed(2)} ${(rightNotchTop.y + notchUpperH * 0.46).toFixed(2)}, ${(w + lowerReturnBulge).toFixed(2)} ${(rightNotchY - notchUpperH * 0.08).toFixed(2)}, ${(w + lowerReturnBulge * 0.96).toFixed(2)} ${(rightNotchY + notchLowerH * 0.18).toFixed(2)}`,
+            `C ${(w + lowerReturnBulge * 0.82).toFixed(2)} ${(rightNotchY + notchLowerH * 0.54).toFixed(2)}, ${(w + lowerReturnBulge * 0.46).toFixed(2)} ${(rightNotchBottom.y - notchLowerH * 0.10).toFixed(2)}, ${rightNotchBottom.x.toFixed(2)} ${rightNotchBottom.y.toFixed(2)}`
+        ].join(' ');
+        svg.appendChild(makePath(lowerReturnPath, 'ruin-fracture-crack ruin-fracture-chip-return ruin-fracture-lower-right-return', CONNECTING_RETURN_OPACITY));
+        addPolyline(svg, [rightNotchBottom, bottomRight], 'ruin-fracture-border', 0.86);
+        addPolyline(svg, [bottomRight, bottomLeft], 'ruin-fracture-border', 0.70);
+        addPolyline(svg, [bottomLeft, topLeft], 'ruin-fracture-border', 0.86);
+
+        // Merge several small stone-like runs so the fracture has a geological
+        // rhythm but never turns into a lightning bolt.
+        function addOutwardStoneRun(points, seedKey, options = {}) {
+            if (!Array.isArray(points) || points.length < 2) return;
+            const merged = [points[0]];
+            for (let i = 0; i < points.length - 1; i++) {
+                const local = rngFor(seedKey + '-' + i);
+                const segment = stoneEdgeCrackPoints(points[i], points[i + 1], local, {
+                    amplitude: options.amplitude ?? 1.35,
+                    segments: options.segments ?? 4,
+                    curveDir: options.curveDir ?? (i % 2 ? -1 : 1),
+                    quant: options.quant ?? 4.6
+                });
+                merged.push(...segment.slice(1));
+            }
+
+            // Remove accidental near-duplicate points and keep the line moving
+            // outward so it reads like a stress fracture instead of a scribble.
+            const cleaned = [merged[0]];
+            let last = merged[0];
+            const dominantDx = (merged[merged.length - 1]?.x ?? last.x) - last.x;
+            const xDirection = dominantDx >= 0 ? 1 : -1;
+            for (let i = 1; i < merged.length; i++) {
+                let p = { ...merged[i] };
+                if (Math.hypot(p.x - last.x, p.y - last.y) < 1.1) continue;
+                if (xDirection > 0) p.x = Math.max(p.x, last.x + 0.55);
+                else p.x = Math.min(p.x, last.x - 0.55);
+                if (Math.abs(p.y - last.y) > 44) {
+                    p.y = last.y + Math.sign(p.y - last.y) * 44;
+                }
+                cleaned.push(p);
+                last = p;
+            }
+
+            addPolyline(
+                svg,
+                cleaned,
+                options.className || 'ruin-fracture-crack ruin-fracture-outward-stem',
+                options.opacity ?? 0.52
+            );
+        }
+
+        // Restore the title-notch crack and the lower-right outward tree
+        // fracture, while keeping the extra inner-frame corner crack groups removed.
+        const outwardRng = rngFor('main-frame-right-outward-tree-v148');
+        const crackStart = {
+            x: rightNotchRoot.x,
+            y: rightNotchRoot.y
+        };
+
+        const stemA = {
+            x: rightNotchRoot.x + (17 + outwardRng() * 11),
+            y: rightNotchRoot.y + (0.9 + outwardRng() * 2.1)
+        };
+        const stemB = {
+            x: rightNotchRoot.x + (45 + outwardRng() * 18),
+            y: rightNotchRoot.y + (5.0 + outwardRng() * 4.2)
+        };
+        const junction = {
+            x: rightNotchRoot.x + (82 + outwardRng() * 34),
+            y: rightNotchRoot.y + (12 + outwardRng() * 10)
+        };
+
+        addOutwardStoneRun(
+            [crackStart, stemA, stemB, junction],
+            'main-frame-right-outward-stem-v147',
+            {
+                amplitude: 1.22,
+                segments: 4,
+                quant: 4.8,
+                opacity: 0.52,
+                className: 'ruin-fracture-crack ruin-fracture-outward-stem'
+            }
+        );
+
+        const upperArmA = {
+            x: junction.x + (22 + outwardRng() * 12),
+            y: junction.y - (6 + outwardRng() * 5)
+        };
+        const upperArmB = {
+            x: junction.x + (60 + outwardRng() * 22),
+            y: junction.y - (5 + outwardRng() * 6)
+        };
+        const upperArmC = {
+            x: junction.x + (118 + outwardRng() * 42),
+            y: junction.y - (6 + outwardRng() * 7)
+        };
+        const upperArmEnd = {
+            x: w + (224 + outwardRng() * 48),
+            y: junction.y - (1 + outwardRng() * 6)
+        };
+        addOutwardStoneRun(
+            [junction, upperArmA, upperArmB, upperArmC, upperArmEnd],
+            'main-frame-right-outward-upper-v160',
+            {
+                amplitude: 1.12,
+                segments: 4,
+                quant: 4.9,
+                opacity: 0.46,
+                className: 'ruin-fracture-crack ruin-fracture-outward-branch'
+            }
+        );
+
+        const downArmA = {
+            x: junction.x + (14 + outwardRng() * 10),
+            y: junction.y + (18 + outwardRng() * 9)
+        };
+        const downArmB = {
+            x: junction.x + (38 + outwardRng() * 18),
+            y: junction.y + (36 + outwardRng() * 14)
+        };
+        const downArmC = {
+            x: junction.x + (86 + outwardRng() * 30),
+            y: junction.y + (56 + outwardRng() * 18)
+        };
+        const downArmEnd = {
+            x: w + (198 + outwardRng() * 44),
+            y: junction.y + (84 + outwardRng() * 26)
+        };
+        addOutwardStoneRun(
+            [junction, downArmA, downArmB, downArmC, downArmEnd],
+            'main-frame-right-outward-down-v160',
+            {
+                amplitude: 1.42,
+                segments: 4,
+                quant: 4.5,
+                opacity: 0.44,
+                className: 'ruin-fracture-crack ruin-fracture-outward-branch'
+            }
+        );
+
+        if (outwardRng() < 0.68) {
+            const tinyRoot = pointAt(downArmA, downArmB, 0.42 + outwardRng() * 0.18);
+            const tinyEnd = {
+                x: tinyRoot.x + (20 + outwardRng() * 22),
+                y: tinyRoot.y + (10 + outwardRng() * 19)
+            };
+            addOutwardStoneRun(
+                [tinyRoot, tinyEnd],
+                'main-frame-right-outward-minor-v147',
+                {
+                    amplitude: 0.92,
+                    segments: 3,
+                    quant: 5.0,
+                    opacity: 0.30,
+                    className: 'ruin-fracture-crack ruin-fracture-outward-branch-minor'
+                }
+            );
+        }
+
+        const crackRng = rngFor(`main-frame-top-notch-crack-v124-${titleSide}`);
+        const crackDx = (notchTip.towardSide ?? -1) * (8 + crackRng() * 12);
+        addSmoothCrack(svg, notchTip, {
+            x: notchTip.x + crackDx,
+            y: Math.min(-16, notchTip.y - (28 + crackRng() * 26))
+        }, crackRng, {
+            amplitude: 1.9,
+            segments: 4,
+            opacity: 0.44
+        });
+
+        target.appendChild(svg);
+        target.classList.add('fracture-active');
+    }
+
+    function renderTopPerspectiveLines() {
+
+        const layer = ensureGlobalLayer();
+        layer.innerHTML = '';
+        const svg = makeSvg('ruin-fracture-global');
+        setViewBox(svg, window.innerWidth, window.innerHeight);
+
+        const frameLeft = getCssNumber('--frame-left', 230);
+        const frameRight = getCssNumber('--frame-right', 168);
+        const frameTop = getCssNumber('--frame-top', 40);
+
+        const leftStart = { x: 0.5, y: 0.5 };
+        const leftEnd = { x: frameLeft, y: frameTop };
+        const rightStart = { x: window.innerWidth - 0.5, y: 0.5 };
+        const rightEnd = { x: window.innerWidth - frameRight, y: frameTop };
+
+        const leftRng = rngFor('perspective-top-left-v194');
+        const slantedChip = addNaturalChipSegment(svg, leftStart, leftEnd, leftRng, {
+            width: 44 + leftRng() * 18,
+            depth: 3.4 + leftRng() * 2.4,
+            normalSign: 1,
+            t: 0.50 + leftRng() * 0.18,
+            opacity: 0.84,
+            lip: 0.14,
+            addReturnLine: true,
+            returnInset: 1.0,
+            returnOpacity: CONNECTING_RETURN_OPACITY
+        });
+        addPolyline(svg, [rightStart, rightEnd], 'ruin-fracture-border', 0.84);
+
+        // v195 · transfer the old upper-left tree crack to the outer frame
+        // zone, and make both branch endpoints land on the upper-left slanted
+        // perspective line, matching the mockup more closely.
+        const transferRng = rngFor('perspective-top-left-transfer-v198');
+
+        // Branch A: choose a real segment from the generated notch floor, then
+        // interpolate inside that segment. This makes the endpoint inherit the
+        // actual random break geometry instead of approximating its depth.
+        let slantedAttachA = pointAt(leftStart, leftEnd, 0.62);
+        if (slantedChip && Array.isArray(slantedChip.facets) && slantedChip.facets.length) {
+            const floorPoints = [slantedChip.entry1, ...slantedChip.facets, slantedChip.entry2]
+                .filter(Boolean);
+            if (floorPoints.length >= 2) {
+                const safeFirst = Math.min(1, floorPoints.length - 2);
+                const safeLast = Math.max(safeFirst, floorPoints.length - 3);
+                const segmentIndex = safeFirst + Math.floor(transferRng() * (safeLast - safeFirst + 1));
+                const floorT = 0.22 + transferRng() * 0.56;
+                slantedAttachA = pointAt(
+                    floorPoints[segmentIndex],
+                    floorPoints[Math.min(segmentIndex + 1, floorPoints.length - 1)],
+                    floorT
+                );
+            }
+        }
+
+        // Branch B: deliberately avoid the notch, but alternate sides. About
+        // half the refreshes land on the intact diagonal BEFORE the break and
+        // half land AFTER it, toward the inner frame. This prevents the Y from
+        // always opening to the same side.
+        const cleanBranchSide = transferRng() < 0.50 ? 'left' : 'right';
+        let slantedAttachB;
+        if (cleanBranchSide === 'right' && slantedChip?.p2) {
+            const cleanRightT = 0.18 + transferRng() * 0.64;
+            slantedAttachB = pointAt(slantedChip.p2, leftEnd, cleanRightT);
+        } else {
+            const cleanLeftEnd = slantedChip?.p1 || pointAt(leftStart, leftEnd, 0.48);
+            const cleanLeftT = 0.30 + transferRng() * 0.52;
+            slantedAttachB = pointAt(leftStart, cleanLeftEnd, cleanLeftT);
+        }
+        const cleanBranchCurveDir = cleanBranchSide === 'right' ? -1 : 1;
+
+        // v198 · the trunk now enters from a visibly lower point on the far-left
+        // screen edge: 25–45% of viewport height. The fork is biased upward along
+        // that journey, so the silhouette rises first and only splits near the
+        // slanted break instead of forming a low, squat Y.
+        const leftEdge = {
+            x: 0.5,
+            y: window.innerHeight * (0.25 + transferRng() * 0.20)
+        };
+        const attachMid = {
+            x: (slantedAttachA.x + slantedAttachB.x) * 0.5,
+            y: (slantedAttachA.y + slantedAttachB.y) * 0.5
+        };
+        const forkProgress = 0.60 + transferRng() * 0.12;
+        const forkBase = pointAt(leftEdge, attachMid, forkProgress);
+        const junction = {
+            x: forkBase.x - (4 + transferRng() * 8),
+            y: Math.max(frameTop + 5, forkBase.y - (2 + transferRng() * 7))
+        };
+
+        const stemTransition = pointAt(leftEdge, junction, 0.24 + transferRng() * 0.08);
+        const slantedTransitionA = pointAt(junction, slantedAttachA, 0.82 + transferRng() * 0.06);
+        const slantedTransitionB = pointAt(junction, slantedAttachB, 0.80 + transferRng() * 0.06);
+
+        addStoneEdgeCrack(svg, leftEdge, stemTransition, transferRng, {
+            amplitude: 2.5,
+            segments: 4,
+            curveDir: 1,
+            quant: 3.8,
+            opacity: 0.40,
+            className: 'ruin-fracture-crack ruin-fracture-edge-stone ruin-fracture-corner-stem'
+        });
+        addCeramicCrack(svg, stemTransition, junction, transferRng, {
+            amplitude: 4.2,
+            segments: 5,
+            curveDir: 1,
+            curveAmount: 5.8 + transferRng() * 2.0,
+            detailScale: 0.050,
+            stoneBias: 0.18,
+            tangentScale: 0.026,
+            opacity: 0.52,
+            className: 'ruin-fracture-crack ruin-fracture-corner-stem'
+        });
+
+        addCeramicCrack(svg, junction, slantedTransitionA, transferRng, {
+            amplitude: 2.0,
+            segments: 3,
+            curveDir: -1,
+            curveAmount: 1.6 + transferRng() * 0.9,
+            detailScale: 0.040,
+            stoneBias: 0.12,
+            tangentScale: 0.020,
+            opacity: 0.42,
+            className: 'ruin-fracture-crack ruin-fracture-corner-branch'
+        });
+        addStoneEdgeCrack(svg, slantedAttachA, slantedTransitionA, transferRng, {
+            amplitude: 1.7,
+            segments: 3,
+            curveDir: 1,
+            quant: 4.0,
+            opacity: 0.32,
+            className: 'ruin-fracture-crack ruin-fracture-edge-stone ruin-fracture-corner-branch'
+        });
+
+        addCeramicCrack(svg, junction, slantedTransitionB, transferRng, {
+            amplitude: 1.8,
+            segments: 3,
+            curveDir: cleanBranchCurveDir,
+            curveAmount: 1.3 + transferRng() * 0.8,
+            detailScale: 0.036,
+            stoneBias: 0.12,
+            tangentScale: 0.018,
+            opacity: 0.38,
+            className: 'ruin-fracture-crack ruin-fracture-corner-branch'
+        });
+        addStoneEdgeCrack(svg, slantedAttachB, slantedTransitionB, transferRng, {
+            amplitude: 1.5,
+            segments: 3,
+            curveDir: -cleanBranchCurveDir,
+            quant: 4.3,
+            opacity: 0.28,
+            className: 'ruin-fracture-crack ruin-fracture-edge-stone ruin-fracture-corner-branch'
+        });
+
+
+        layer.appendChild(svg);
+        document.body.classList.add('ruin-fracture-active');
+    }
+
+    function renderCompass() {
+        const target = document.querySelector('.compass-pentagon-outer');
+        if (!target) return;
+
+        clearTargetOverlays(target);
+        const rect = target.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        const svg = makeSvg('ruin-fracture-compass');
+        setViewBox(svg, w, h);
+
+        const rng = rngFor('compass-v177');
+
+        // These ratios describe the ACTUAL remaining straight border lengths.
+        // Left: 50–90% of the full left edge remains.
+        // Bottom: 50–80% of the full bottom edge remains from the right side.
+        const leftKeepRatio = 0.50 + rng() * 0.40;
+        const bottomKeepRatio = 0.50 + rng() * 0.30;
+
+        const leftFree = {
+            x: 0.5,
+            y: h * leftKeepRatio
+        };
+        const bottomFree = {
+            x: w * (1 - bottomKeepRatio),
+            y: h - 0.5
+        };
+
+        function normalizePoint(v) {
+            const len = Math.hypot(v.x, v.y) || 1;
+            return { x: v.x / len, y: v.y / len };
+        }
+
+        function buildMasonryEdgePoints(start, end, rand) {
+            const v = vec(start, end);
+            if (v.len < 8) return [start, end];
+
+            const inward = { x: v.uy, y: -v.ux };
+            const pts = [{ x: start.x, y: start.y }];
+
+            const facetCount = 4 + Math.floor(rand() * 2);
+            const weights = [];
+            let weightSum = 0;
+            for (let i = 0; i < facetCount; i++) {
+                const wgt = 0.95 + rand() * 1.15;
+                weights.push(wgt);
+                weightSum += wgt;
+            }
+
+            const bayCenter = 0.34 + rand() * 0.32;
+            const bayWidth = 0.16 + rand() * 0.10;
+            const bayDepth = 2.1 + rand() * 1.9;
+
+            let acc = 0;
+            let prevT = 0;
+            let prevInset = 0.75 + rand() * 0.55;
+
+            for (let i = 0; i < facetCount; i++) {
+                acc += weights[i];
+                const rawT = acc / weightSum;
+                const t = Math.min(0.93, Math.max(prevT + 0.10, rawT));
+                const dt = Math.max(0.05, t - prevT);
+
+                const leadT = Math.max(prevT + dt * 0.42, t - dt * 0.30);
+                const turnT = t;
+                const leadBase = pointAt(start, end, leadT);
+                const turnBase = pointAt(start, end, turnT);
+
+                const bayInfluence = Math.max(0, 1 - Math.abs(turnT - bayCenter) / bayWidth);
+
+                let turnInset;
+                if (rand() < 0.36) {
+                    turnInset = prevInset + (rand() - 0.5) * 0.65;
+                } else {
+                    turnInset = 0.95 + rand() * 1.65 + bayInfluence * bayDepth;
+                }
+                turnInset = Math.max(0.55, Math.min(4.8, turnInset));
+
+                let leadInset = turnInset * (0.68 + rand() * 0.12);
+                leadInset = Math.max(0.45, Math.min(4.3, leadInset));
+
+                const leadJitter = (rand() - 0.5) * Math.min(0.85, v.len * 0.008);
+                const turnJitter = (rand() - 0.5) * Math.min(1.10, v.len * 0.011);
+
+                pts.push({
+                    x: leadBase.x + inward.x * leadInset + v.ux * leadJitter,
+                    y: leadBase.y + inward.y * leadInset + v.uy * leadJitter
+                });
+                pts.push({
+                    x: turnBase.x + inward.x * turnInset + v.ux * turnJitter,
+                    y: turnBase.y + inward.y * turnInset + v.uy * turnJitter
+                });
+
+                prevInset = turnInset;
+                prevT = turnT;
+            }
+
+            if (rand() < 0.58) {
+                const nickT = Math.min(0.965, Math.max(prevT + 0.025, 0.88 + rand() * 0.05));
+                const nickBase = pointAt(start, end, nickT);
+                const nickInset = Math.max(0.55, Math.min(4.5, prevInset * (0.72 + rand() * 0.16)));
+                pts.push({
+                    x: nickBase.x + inward.x * nickInset,
+                    y: nickBase.y + inward.y * nickInset
+                });
+            }
+
+            pts.push({ x: end.x, y: end.y });
+            return pts;
+        }
+
+        function addSmallCornerChip(edgeA, corner, edgeB, rand, opts = {}) {
+            const dirA = normalizePoint({ x: edgeA.x - corner.x, y: edgeA.y - corner.y });
+            const dirB = normalizePoint({ x: edgeB.x - corner.x, y: edgeB.y - corner.y });
+            const inward = normalizePoint({ x: dirA.x + dirB.x, y: dirA.y + dirB.y });
+
+            const depth = opts.depth ?? (2.4 + rand() * 2.2);
+            const aLen = Math.max(1, Math.hypot(edgeA.x - corner.x, edgeA.y - corner.y));
+            const bLen = Math.max(1, Math.hypot(edgeB.x - corner.x, edgeB.y - corner.y));
+
+            // v177 · corner-chip safety:
+            // Keep the generated facets strictly ordered from each edge toward the
+            // corner and let the inward depth increase monotonically to one shallow
+            // apex, then decrease again. This prevents local reflex/negative angles
+            // and the little "hook" shapes seen in v176.
+            const aOuterT = 0.18 + rand() * 0.08;
+            const aInnerT = Math.min(0.62, aOuterT + 0.18 + rand() * 0.10);
+            const bOuterT = 0.18 + rand() * 0.08;
+            const bInnerT = Math.min(0.62, bOuterT + 0.18 + rand() * 0.10);
+
+            const outerDepthA = depth * (0.12 + rand() * 0.08);
+            const innerDepthA = Math.max(
+                outerDepthA + 0.35,
+                depth * (0.46 + rand() * 0.10)
+            );
+
+            const outerDepthB = depth * (0.12 + rand() * 0.08);
+            const innerDepthB = Math.max(
+                outerDepthB + 0.35,
+                depth * (0.46 + rand() * 0.10)
+            );
+
+            const apexDepth = Math.max(
+                innerDepthA,
+                innerDepthB,
+                depth * (0.78 + rand() * 0.10)
+            );
+
+            const pAOuter = {
+                x: corner.x + dirA.x * (aLen * aOuterT) + inward.x * outerDepthA,
+                y: corner.y + dirA.y * (aLen * aOuterT) + inward.y * outerDepthA
+            };
+            const pAInner = {
+                x: corner.x + dirA.x * (aLen * aInnerT) + inward.x * innerDepthA,
+                y: corner.y + dirA.y * (aLen * aInnerT) + inward.y * innerDepthA
+            };
+
+            // Keep apex near the geometric bisector. Only tiny jitter is allowed,
+            // otherwise the polygon can fold back and create a negative angle.
+            const apex = {
+                x: corner.x + inward.x * apexDepth + (rand() - 0.5) * 0.16,
+                y: corner.y + inward.y * apexDepth + (rand() - 0.5) * 0.16
+            };
+
+            const pBInner = {
+                x: corner.x + dirB.x * (bLen * bInnerT) + inward.x * innerDepthB,
+                y: corner.y + dirB.y * (bLen * bInnerT) + inward.y * innerDepthB
+            };
+            const pBOuter = {
+                x: corner.x + dirB.x * (bLen * bOuterT) + inward.x * outerDepthB,
+                y: corner.y + dirB.y * (bLen * bOuterT) + inward.y * outerDepthB
+            };
+
+            addPolyline(
+                svg,
+                [edgeA, pAOuter, pAInner, apex, pBInner, pBOuter, edgeB],
+                'ruin-fracture-border ruin-fracture-damaged ruin-fracture-compass-chip',
+                opts.opacity ?? 0.90
+            );
+        }
+
+        const tl = { x: 0.5, y: 0.5 };
+        const tr = { x: w - 0.5, y: 0.5 };
+        const br = { x: w - 0.5, y: h - 0.5 };
+
+        const tlChipActive = rng() < 0.55;
+        const trChipActive = rng() < 0.52;
+        const lbChipActive = rng() < 0.58;
+
+        const tlTopInset = tlChipActive ? 6 + rng() * 6 : 0;
+        const tlLeftInset = tlChipActive ? 5 + rng() * 7 : 0;
+        const trTopInset = trChipActive ? 6 + rng() * 7 : 0;
+        const trRightInset = trChipActive ? 5 + rng() * 7 : 0;
+        const lbLeftInset = lbChipActive ? 6 + rng() * 8 : 0;
+        const lbDiagInset = lbChipActive ? 8 + rng() * 10 : 0;
+
+        const topStart = tlChipActive ? { x: tl.x + tlTopInset, y: tl.y } : tl;
+        const topEnd = trChipActive ? { x: tr.x - trTopInset, y: tr.y } : tr;
+        const rightStart = trChipActive ? { x: tr.x, y: tr.y + trRightInset } : tr;
+        const leftStart = tlChipActive ? { x: tl.x, y: tl.y + tlLeftInset } : tl;
+        const leftEnd = lbChipActive ? { x: leftFree.x, y: Math.max(1.5, leftFree.y - lbLeftInset) } : leftFree;
+
+        const diagonalVector = vec(leftFree, bottomFree);
+        const lbDiagT = diagonalVector.len > 0 ? Math.min(0.28, lbDiagInset / diagonalVector.len) : 0;
+        const masonryStart = lbChipActive ? pointAt(leftFree, bottomFree, lbDiagT) : leftFree;
+
+        addPolyline(svg, [topStart, topEnd], 'ruin-fracture-border', 0.84);
+        addPolyline(svg, [rightStart, br], 'ruin-fracture-border', 0.84);
+        addPolyline(svg, [leftStart, leftEnd], 'ruin-fracture-border', 0.84);
+        addPolyline(svg, [bottomFree, br], 'ruin-fracture-border', 0.84);
+
+        const masonryEdge = buildMasonryEdgePoints(masonryStart, bottomFree, rng);
+        addPolyline(svg, masonryEdge, 'ruin-fracture-border ruin-fracture-damaged', 0.90);
+
+        if (tlChipActive) {
+            addSmallCornerChip(topStart, tl, leftStart, rng, { depth: 2.4 + rng() * 1.9, opacity: 0.90 });
+        }
+        if (trChipActive) {
+            addSmallCornerChip(topEnd, tr, rightStart, rng, { depth: 2.2 + rng() * 2.0, opacity: 0.90 });
+        }
+        if (lbChipActive) {
+            addSmallCornerChip(leftEnd, leftFree, masonryStart, rng, { depth: 2.6 + rng() * 2.2, opacity: 0.90 });
+        }
+
+        target.appendChild(svg);
+        target.classList.add('fracture-active');
+    }
+
+    // v179 · Illustrator editing workflow:
+    // - always request the freshest SVG while the site is actively being edited;
+    // - allow ?drawer-svg=left / ?drawer-svg=right to force one authored variant
+    //   without changing source code. Default remains random.
+    const INDEX_DRAWER_SVG_URLS = Object.freeze({
+        left: `assets/index-drawer-left.svg?edit=${Date.now()}`,
+        right: `assets/index-drawer-right.svg?edit=${Date.now()}`
+    });
+    const drawerSvgDebugMode = new URLSearchParams(window.location.search).get('drawer-debug') === '1';
+
+    function setIndexDrawerSvgDebug(message, ok = true) {
+        if (!drawerSvgDebugMode) return;
+        let panel = document.getElementById('index-drawer-svg-debug-panel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'index-drawer-svg-debug-panel';
+            panel.style.cssText = [
+                'position:fixed',
+                'left:12px',
+                'top:12px',
+                'z-index:999999',
+                'padding:8px 10px',
+                'font:12px/1.45 monospace',
+                'background:rgba(255,255,255,.96)',
+                'border:1px solid #333',
+                'color:#111',
+                'pointer-events:none',
+                'white-space:pre-wrap'
+            ].join(';');
+            document.body.appendChild(panel);
+        }
+        panel.style.borderColor = ok ? '#008b57' : '#d00040';
+        panel.textContent = message;
+    }
+
+    const drawerSvgRequestedVariant = new URLSearchParams(window.location.search).get('drawer-svg');
+    const INDEX_DRAWER_SVG_VARIANT = ['left', 'right'].includes(drawerSvgRequestedVariant)
+        ? drawerSvgRequestedVariant
+        : 'random'; // 'random' | 'left' | 'right'
+    const indexDrawerSvgSourcePromises = new Map();
+    let indexDrawerSvgVariant = null;
+
+    // v187 · stable, non-stretching Index Drawer surface.
+    // The authored SVG is taller than the currently visible drawer. Extra vertical
+    // space is a reserve area for Illustrator work. The UI reveals/crops that reserve
+    // instead of stretching the drawing when the drawer height changes.
+    const INDEX_DRAWER_SVG_WIDTH = 1600;
+    const INDEX_DRAWER_SVG_HANDLE_HEIGHT = 60;
+    const INDEX_DRAWER_SVG_MASTER_HEIGHT = 1160;
+    const INDEX_DRAWER_SVG_BODY_MAX = INDEX_DRAWER_SVG_MASTER_HEIGHT - INDEX_DRAWER_SVG_HANDLE_HEIGHT;
+
+
+    // v192 · Illustrator-authored closed slab outlines.
+    // Kept in JS as well as the SVG so file:// fallback can still apply the
+    // correct 60/40 candidate and a real masked backdrop-filter.
+    const INDEX_DRAWER_VARIANT_PATHS = Object.freeze({"left": "M0,60l174.5-40.5l2.9,3.3l4.1,1.4l8.2,0.5l10.4,2.8l1.9,3.1l5.8,5.6l0.5,1.1l2.2,1.5l1.5,0.9l0.2,3.2v9.7    l-1.6,10.6l-0.2,3.7l-3.3,4.8l-0.9,2.7l-1.8,2.2l-1.8,3.5L189,83.7l-8.9,6.9l-7,13.2l-0.8,6.1l-2.2,5.5l-3.1,7.2l-6,6.6l-2.4,6.7    l-1.4,3.9l-2.9,7.8l-3.1,4.4l-13.4,0.6h-9.1l-5.8,1.4h-5.5h-8l-18.6,6.5l-10.2,0.8L67.2,164l-8.2,2.7l-16.1,3.7l-13.3,3.8H3.2    l-2.1-0.4L0,171.9V183l3.5-3.5l4.2-0.7l6.5-2.1l4.2-0.9h3.9l5.3-0.4h6.9l9-1.7l6.8-1.4l10.2-3.4l11.5-3.8l7.6-1.5l9.6-0.9l5.3-2.4    l7.3-1.9l9.2-1.9h6.6l10.5-1.3l4.3-1.2l8.6,1l13.7-2.3l3-5.5l2.9-10.6l0.5-2.6l7.7-11.4l2.4-4.9l6.2-8.6l2.1-6.6l3.6-5l5.3-11    l10.8-3.2l9.8-5l4.4-4.9l4.9-3.5l4.2-1.8l4.5-0.7l0.9-3.3v-4.7l-1.7-5.4l-9.7-9.9l-0.8-1.3l-2.5-2l-1.7-2.1l-0.8-1.3l-1.5-1.4    l-0.6-1.3V32v-1.9l-1.9-1.9l-0.4-1.6v-2.2l0.4-5.8l1.1-1.2l1.7-1.4l1.2-2.5l3.5-3l42.1-9.7h242.8L722.3,0l3.2,3l-0.1,5.6l-1.4,6.5    l-1.2,7.3l0.2,6.9l1.5,18.9l4.3,9.8l3.1,7.1l4.5,5.4l8.4,4.5l8.7,2.3l4.3,1.1l10.2,2l10.4,4l8.1,3.2l5.1,2.9l5.1,2.4l5.4,4.8    l5.1,3.1l6,3.4l9.1,6.8l10,3.7l12.8,7.1l5.4,5.9l2.6,5.5l9.1,6.3l10.5,7.4l11.8,4.2l4.4,3.6l11.2,10.9l10.6,7l4.5,3.1l9.2,7.2    l3.5,5.1l-1.7,4.4l-2.7,4.1l-2.9,3.3l-1.3,4.1l-3.1,4.6l-3.7,2.5l-4.7,2.2l-4.7,4.1l-4.5,6.6l-2.3,7.6l-6.5,8.7l-4.3,10.8    l-5.8,15.9l-2,8.1l-0.5,12.2l-6.9,10.1l-12.6,17l-2,12.5l-5.3,8l-4.2,4.1l-5.3,5.7l-11,8.9L825,358l-7.9,4.8l-12.9,13.9l-5.8,12    l-12.7,14.1l-4.1,4.9l-2.6,6.8l-6.1,9.2l-5.6,7l-5.1,10.5l-3.8,6.9l-1.8,3.2l-9.2,16.5l-12.2,12l-4.6,6.4l-12.2,11.6l-9.2,12    l-6.7,11.4l-7.1,9.2l-4.7,12.6l-8.4,18.2l-6.7,7.7l-1.7,2l-15.4,12.5l-6.2,10.8l-5.3,9.1l-5.3,6.8l-7.7,18l-2.3,5.5L627,644    l-5,11.8l-5.7,10.6l-1.9,7.1l-1.9,7l-5.8,11.6l-9,13.7l-7,13.1l-6.1,11.2l-7.6,11.8l-10.2,22.9l-8.9,20.8l-9.4,20.8l-3,17.1    l1.1,12l-5,15.4l-2.6,16.4l-4,15.3l-5.5,22l-2.7,11.2l-6.6,15l-5.7,4.6l-12,6.9l-12.6,8.2l-8.3,0.9l133.5,1.6l25.7,0.3l-46-5.4    l-11.5-5.9l-21.9-6.3l-7.7-7.8l-5.2-2.1l-4.7-6.7l-3.6-4.2l-1.7-5.8l-2-6.7l-1.1-7.5l0-2.6l0.5-3.4l3.3-11.1l4.5-25.2l2.2-6    l1.6-5.6l1.7-13l0.9-14.3l4.8-12.7l0.6-5.8l2.5-4.9l7-13.3l1.3-4.2l9.9-22.9l3-6.4l6.3-10.7l4.2-10.1l7.1-12.1l6.4-9l3-6.5    l4.9-8.6l3.9-7.9l1.5-8.4l3.3-7.5l5.9-5.9l0.9-4.3l6.6-17.6l5.5-12.9l4.2-7.4l7.7-14.1l6.4-10.7l4.2-5l9.4-8.2l7.9-8.9l6.5-7.9    l5.6-12.6l4-11l4.8-7l11.3-10.2l7.3-11.4l12.2-14.8l4.9-7.4l1.9-5l5.2-5.5l11.4-11.5l6.6-10.1l4.7-11.1l0.9-6.3l13.6-16.2    l5.6-10.3l7.4-11.1l11.7-15.1l8.9-12.4l15.4-10.4l16.7-16l5.6-6.4l9.5-12.6l0.9-5.5l9.2-14.4l10.6-15.6l-0.1-4.1l0.3-4.3l9.1-25.5    l7-17.1l1.9-5.8l2-3.9l2-5.7l3.7-5.2l8.1-2.7l0.6-2.2l4-2.3l5.4-3.5l5.8-3.5l4.9,0.8l12.2,6.6l11.5,2.7l3.7,0.9l23,12.9l15,5.8    l18.6,8.1l9.1,9.1l4.5,3.5l8.9,7l4.4,3.2l10.5,8.1l5.5,4.2l12.5,6.1l12.1,12.8l6.2,7.4l4.5,7.4l8.5,8.4l11.8,7.2l13.6,12.3    l6.8,4.3l8.5,13.7l5.3,6.1l5.9,4.8l9.1,9l6.7,7.8l10,8.9l7.5,5.6l12.1,10.4l6.3,4.5l2.9,4.4l8.7,11.5l3.2,6.4l8.8,4.2l9.1,3.4    l6.2,5.2l7.3,7l7,3.5l3.3,4.2l1.7,6.6l7.2,3.3l3.6,11.4l9.1,12.7l10.3,16.2l5.9,8.8l4.2,7l6.4,6.2l7.6,8.5l4.5,5.2l4.3,6.5    l2.5,7.6l3.4,6.8l4.7,8.1l3.5,7.6c0,0,3.8,6.7,4,7.2c0.2,0.5,4.9,7.5,4.9,7.5l6.3,5.8l7.8,9.1l1.4,3.7l3.2,7.2l6.6,9.1    c0,0,3.7,6.4,4.2,6.7c0.5,0.3,6.1,10.1,6.1,10.1l6.7,10.7l2.8,3.6l9.5,8.3l7.2,13.5c0,0,3.4,5.5,3.8,6l1.8,8.6l3.4,7.4l6.7,7    l14.2,18.9l4.3,8.5l5.5,6.7l6.5,5.1l3.5,7l2.8,9.5l4,6.7l4.4,4.1l6.6,7.3l0.9,6.5c0.6,1.8,4.6,6.8,4.6,6.8l5.9,4.3l6,4.6l6.3,5.5    l3.9,5.5l3.1,6.7l1,9.5l4,7.7l5.9,9.8l12.3,7.4l3.1,5.9l8,9.8l-0.4,6.1l11.4,14l22.5,10.5l15.6,4.9l1.1-15.5l-15,1.9l-17.6-7.6    l-4-4.6l-2.6-3.9l-6.7-3.8l3.2-9.3l-2.2-5.2l-8.9-8.4l-12.8-9.2l-9.4-17.8l-2.7-5.9l-6.7-8.8l-12.7-16.5l-10-10.2l-1.6-6.3l-5-6    l-7.3-4.9l-8.3-10.2l-0.5-8l-5.6-5.6l-4.4-8l-26.6-34.3l-6-15.7l-4.9-10.8l-13.3-16.5l-7.8-7.4l-8.9-13.6l-4.9-6l-3.5-11l-8.5-6.7    l-2-6.3l-1.9-8.5l-4.9-16.6l-7.5-4.8l-8.5-7.9l-11-10.8l-0.4-6.6l-4-8.2l-9-7.9l-9.5-11.7l-3-6.6l-7-11l-2.6-3.4l-5.7-7.5    l-4.2-5.6l-4.1-6.2l-2.3-3.5l-5-8.8l-6.4-16.3l-16.6-12.4l-13.6-8.9l-15.1-5.2l-4.5-3.8l-2.5-5.7l-6.5-8.8l-4.5-7.9l-30.1-24.1    l-7-10.4l-4.5-5.4l-5-3.5l-3.5-5l-7-7.9l-3.9-10.4l-5.5-7.6l-11.6-8l-9.1-5.4l-7-5.4l-7-7.3l-8-10.7l-3.4-8.5l-16.1-13.3    l-16.6-11.8l-20.2-8.4l-18.1-13l-14.6-11.4L984,210.8l-32.3-16L930,181.7l-10-8.9l-0.4-6.6l0.1-4.7l3.1-11.3l10.2-12.5l15.4-9.6    l23.4-19.5l5.9-5.1c0,0,15.7-6.6,31.2-14.7c3.8-2,7.5-4,11.1-6.1c1.9-1.1,3.8-2.3,5.6-3.4c4.4-2.8,8-5.6,10.4-8.2    c12.3-13.2,21.9-23.1,21.9-23.1l8.6-14.8c0,0,0.6-1.1,1.6-2.7c1.1-1.7,2.6-4,4.3-5.7c1.1-1.1,3.7-3.8,6.6-6.7    c5.3-5.4,14-13.6,14-13.6l-13,0.5l5,2.7l-2.1,3l-3.4,5l-4.1,3.4l-4.9,5.8l-6.1,9.2l-2.9,5.4l-5.5,7.5l-7.3,6.1l-5.9,8.7l-7,7.6    l-4.7,5l-10,6.6l-13.7,7.8l-19.4,9.3l-8.2,3.8l-3.7,1.9l-20.3,17.6l-6,4.7l-2.5,1.6l-11.4,6.4l-3.5,2.5l-2.6,3.8l-4.4,5.8    l-3.3,3.8l-2.5,6.5l-1.7,3.2l-3.8,3l-3.2,1.6l-4.1-0.6l-2.9-2l-4.9-4.8l-7.6-5.9l-9.9-2.8l-14-8.3l-8.7-7l-4.6-6.6l-6.5-5.3    l-12.6-5.7l-9.7-4.3l-9.1-6.6l-6.6-4.3l-12.4-8.7L772,81l-5.7-2.3l-14.2-4l-9.4-2.2l-3.4-3.2l-3.8-5.7l-6.7-16.5l-1.9-5.4v-9.3    l-2-10.1l7.6-16.5l4.2-4.3l24-0.9L1060,0.8l1.9,1.4l1.9,0.8l4.8,0.1l6.2,1l4.9,0.8l8.6-0.6l1.5,0.1h2.9l2.5-1.6h3l1.4-0.7l4.2-1.3    h96l3.1,0.5l6.1,0.4l22.3-0.5l2.7-0.4h179L1600,60v1100H0V67.4", "right": "M0,60v1100h1600V60l-64.3-24.9l-1.4,1.8l-1.5,2.5l-2.2,1.4l-0.6,1.7l-2.9,1.9l-2.2,1.7l-1.3,0.2l-2.3,0.4    l-2,1.1l-4.9,0.6l-4.2-0.2l-5.9-0.1l-3.8,0.3l-4.8-0.3l-1.3-0.3h-1.1l-1.4,1.9l-3.7,4.2l-3.2,2.8l-3.3,1.7l-0.2,2.6l-0.2,5.9    l-0.9,4.6l-0.9,3.5l-0.6,3.9l0.3,3.6l1.1,1.7v6.3l-0.6,1.6l-1,2.6l-0.6,3.3l0.1,6l-0.2,3.2l-0.4,2.2l-0.6,8.6l-1.2,0.6l-2.9,4.2    l-3.6,4.6l-1.1,4.5l-1.8,4.1l-2.1,5.8l-2.6,8.1l-3,6.6l-0.3,2.6v3.5l-1.4,4.6v8.4l-1,1.9l-2.5,2.7l-2.1,6.2l-1,4.9l0.1,7.9    l-1.3,1.1l-1.5,2.1l-2.7,5.8l-1.8,2.1l-3.9,7.4l1.1,2.3l0.2,2.7l0.2,4.6l-1.8,13.8l-2.1,11.2l-0.9,3.9l-0.7,5.2l1.3,9.5l2.3,13.3    l1.3,16.1l3.5,32.6l0.9,16.6v5.5l0.1,8.2l0.4,8.4l0.1,7.9l1.2,14.7v7.4c0,0,1,12.2,1.8,16.4c0.9,4.3-0.1,27.9-0.1,27.9l-0.6,4.4    l-2,9l-1.7,9.1l-0.9,7.4l-0.5,7.4l-0.2,16.9l0.5,8.1l0.5,4.1l2,8.3c0,0,4.4,19.3,9.2,37.2c4.8,17.9,14.7,25.8,14.7,25.8H1445    l0.1-2.9l-0.3-11.5l0.1-14.2l-0.6-8.5l-0.9-10.7l-1.1-14.5l-1-6.8l-0.4-8.6v-7.4v-8.2l0.8-11.8l-0.8-2.7v-5.1l-1.3-6.8l0.4-5.7v-7    l-0.6-7.6l1-12.7l0.2-8.7l1.3-6.8l0.8-4.2l0.7-3.2l-0.2-40.9l-0.1-27.2l-1.3-15.7l-1.9-15.7l-2.7-26.7l-3-19.4l0.5-7.4l-0.9-2.9    l0.2-9.1l0.6-6.1l0.5-5.9l1.5-4.8l0.2-2.8l1.2-3.8l0.5-4l3.2-4.6l1.5-2.3l0.1-3.6l0.4-6.1l1.3-6l4.3-11.6l3.8-10.4l3.7-11.3    l1.2-5.9l1.3-4.9l3.3-9.1l1.6-2.5l1-1.6l0.9-1.4l1.8-5.3l0.6-4.2l0.8-3.9l1.4-5.2l0.7-8.3l0.6-2.6l1.8-4.7l1.2-4.1l2.8-15.1    l0.7-5.4l0.2-4.3l0.5-5.4l0.5-4.1l-1.1-0.5v-2.3V56l0.4-1.9l1.4-0.7l2.3-3l0.1-2.3l0.2-2.3l0.2-2.9l1.6-2.5l-0.6-2.6l-1.1-0.2    l-1.1-0.9l-1.6-1.5l-0.6-2.7l-0.7-1.1l-0.8-1.6l-1.3-1.6l-0.7-2.2L1413,0.9h-194.3h-3.6l-1.3,1l-1.7,1.1l-6,4.3l-4.9,4.5l-2.4,0.9    l-1.6,0.2l-2.4,1.6l-3.3,2l-5.6,2l-4,0.9l-7.1,1.4h-14.5h-3.8l-2.5-1.4l-4.5-1.3l-4.7-0.4l-11.2,0.5l-4.2,0.9l-7.4,0.4l-2.6-0.5    l-1-1.3l-1-1l-2.4-1.5l-3.9-1.8l-1.8-0.8l-4.6-0.9l-3.4-0.7l-4.2-1.4l-4.2-1.2L1091,8l-4.2-0.4l-1.2-0.5l-0.6-1l-1.4-0.6l-2-2.1    l-1.7-1.5l-0.4-1.1H256.4l-64.9,15L147.3,26L0,60z"});
+
+    function ensureIndexDrawerScrollLayer() {
+        const content = document.getElementById('index-drawer-content');
+        const svgHost = document.getElementById('index-drawer-svg-body');
+        if (!content || !svgHost) return null;
+
+        let layer = document.getElementById('index-drawer-scroll-layer');
+        if (!layer) {
+            layer = document.createElement('div');
+            layer.id = 'index-drawer-scroll-layer';
+            layer.className = 'index-drawer-scroll-layer';
+
+            const movable = [...content.children].filter(node => node !== svgHost);
+            movable.forEach(node => layer.appendChild(node));
+            content.appendChild(layer);
+        }
+        return layer;
+    }
+
+
+    // v189 · adaptive stone-slab height
+    // Measure the real translated copy, then let the slab shrink around shorter
+    // languages.  The space above Ruin Lexicology remains elastic: it survives as
+    // a modest breathing gap when room exists, compresses toward zero before any
+    // scrolling begins, and only after that does overflow-y:auto become active.
+    function measureIndexDrawerNaturalContentHeight(layer) {
+        if (!layer) return 0;
+        const layerStyle = getComputedStyle(layer);
+        const px = value => {
+            const n = parseFloat(value);
+            return Number.isFinite(n) ? n : 0;
+        };
+
+        let total = px(layerStyle.paddingTop) + px(layerStyle.paddingBottom);
+        [...layer.children].forEach(child => {
+            const style = getComputedStyle(child);
+            if (style.display === 'none') return;
+            const rect = child.getBoundingClientRect();
+            const marginTop = child.classList.contains('index-items') ? 0 : px(style.marginTop);
+            total += marginTop + rect.height + px(style.marginBottom);
+        });
+        return total;
+    }
+
+    function getIndexDrawerPreferredElasticGap() {
+        const lang = document.documentElement.lang;
+        if (lang === 'en') return 18;
+        if (lang === 'ja') return 22;
+        return 24;
+    }
+
+    function syncIndexDrawerAdaptiveHeight() {
+        const drawer = document.getElementById('index-drawer');
+        const content = document.getElementById('index-drawer-content');
+        const layer = document.getElementById('index-drawer-scroll-layer');
+        if (!drawer || !content || !layer) return;
+
+        const desktop = window.matchMedia('(min-width: 769px) and (min-height: 521px)').matches;
+        if (!desktop) {
+            content.style.removeProperty('--index-drawer-adaptive-height');
+            drawer.removeAttribute('data-drawer-overflow');
+            return;
+        }
+
+        const naturalHeight = measureIndexDrawerNaturalContentHeight(layer);
+        if (!naturalHeight) return;
+
+        const preferredGap = getIndexDrawerPreferredElasticGap();
+        const maxHeight = Math.max(360, Math.min(700, window.innerHeight * 0.85 - 60));
+        const minHeight = Math.min(maxHeight, 350);
+
+        // The gap is the first thing sacrificed.  Short Chinese copy therefore
+        // produces a visibly shorter slab; English can grow until maxHeight, then
+        // scroll without stretching the SVG drawing.
+        const desiredHeight = Math.min(
+            maxHeight,
+            Math.max(minHeight, naturalHeight + preferredGap)
+        );
+
+        content.style.setProperty('--index-drawer-adaptive-height', `${desiredHeight.toFixed(1)}px`);
+        drawer.dataset.drawerOverflow = naturalHeight > maxHeight + 0.5 ? 'true' : 'false';
+        drawer.dataset.drawerNaturalHeight = naturalHeight.toFixed(1);
+        drawer.dataset.drawerHeight = desiredHeight.toFixed(1);
+
+        window.requestAnimationFrame(() => {
+            syncIndexDrawerSvgBodyViewBox();
+            syncIndexDrawerCrackOverpass();
+        });
+    }
+
+    function syncIndexDrawerAdaptiveHeightThroughTransition() {
+        [0, 60, 180, 420, 900, 1450, 1750].forEach(delay => {
+            window.setTimeout(syncIndexDrawerAdaptiveHeight, delay);
+        });
+    }
+
+    function getIndexDrawerBodyViewBoxHeight() {
+        const host = document.getElementById('index-drawer-svg-body');
+        if (!host) return 700;
+        const rect = host.getBoundingClientRect();
+        if (rect.width < 2 || rect.height < 2) return 700;
+
+        // Keep one SVG unit square on screen: vertical size is derived from the
+        // horizontal 1600-unit master scale. This reveals more/less reserve instead
+        // of squeezing cracks vertically.
+        const units = rect.height * INDEX_DRAWER_SVG_WIDTH / rect.width;
+        return Math.max(420, Math.min(INDEX_DRAWER_SVG_BODY_MAX, units));
+    }
+
+    function syncIndexDrawerSvgBodyViewBox() {
+        const bodyUnits = getIndexDrawerBodyViewBoxHeight();
+        const viewBox = `0 ${INDEX_DRAWER_SVG_HANDLE_HEIGHT} ${INDEX_DRAWER_SVG_WIDTH} ${bodyUnits.toFixed(2)}`;
+
+        document.querySelectorAll('#index-drawer-svg-body > svg, #index-drawer-crack-overpass-body > svg')
+            .forEach(svg => {
+                svg.setAttribute('viewBox', viewBox);
+                svg.setAttribute('preserveAspectRatio', 'none');
+            });
+
+        const drawer = document.getElementById('index-drawer');
+        if (drawer) drawer.dataset.svgBodyUnits = bodyUnits.toFixed(2);
+        syncIndexDrawerFrostMasks(bodyUnits);
+    }
+
+    function chooseIndexDrawerSvgVariant() {
+        if (INDEX_DRAWER_SVG_VARIANT === 'left' || INDEX_DRAWER_SVG_VARIANT === 'right') {
+            return INDEX_DRAWER_SVG_VARIANT;
+        }
+        if (!indexDrawerSvgVariant) {
+            const variantRng = rngFor('index-drawer-svg-variant-v192');
+            indexDrawerSvgVariant = variantRng() < 0.60 ? 'left' : 'right';
+        }
+        return indexDrawerSvgVariant;
+    }
+
+    function fetchIndexDrawerSvgSource(variant) {
+        const key = variant === 'right' ? 'right' : 'left';
+        if (!indexDrawerSvgSourcePromises.has(key)) {
+            const url = INDEX_DRAWER_SVG_URLS[key];
+            const promise = fetch(url, { cache: 'no-store' })
+                .then(response => {
+                    if (!response.ok) throw new Error(`Index Drawer SVG ${key} HTTP ${response.status}`);
+                    return response.text();
+                })
+                .then(text => {
+                    const parsed = new DOMParser().parseFromString(text, 'image/svg+xml');
+                    const root = parsed.documentElement;
+                    if (!root || root.nodeName.toLowerCase() !== 'svg') {
+                        throw new Error(`Invalid Index Drawer SVG: ${key}`);
+                    }
+                    const expectedFrame = key === 'right' ? '#FRAME_RIGHT' : '#FRAME_LEFT';
+                    if (!root.querySelector(expectedFrame)) {
+                        throw new Error(`Index Drawer ${key} SVG is missing ${expectedFrame}`);
+                    }
+                    setIndexDrawerSvgDebug(
+                        `index-drawer-${key}.svg FETCH OK\nframe: ${expectedFrame}\nbytes: ${text.length}`,
+                        true
+                    );
+                    return root;
+                })
+                .catch(error => {
+                    indexDrawerSvgSourcePromises.delete(key);
+                    setIndexDrawerSvgDebug(`index-drawer-${key}.svg FETCH ERROR\n${error.message || error}`, false);
+                    throw error;
+                });
+            indexDrawerSvgSourcePromises.set(key, promise);
+        }
+        return indexDrawerSvgSourcePromises.get(key);
+    }
+
+    function prefixSvgIds(svg, prefix) {
+        const idMap = new Map();
+        svg.querySelectorAll('[id]').forEach(node => {
+            const oldId = node.id;
+            const newId = `${prefix}-${oldId}`;
+            idMap.set(oldId, newId);
+            node.id = newId;
+        });
+
+        if (!idMap.size) return;
+
+        svg.querySelectorAll('*').forEach(node => {
+            Array.from(node.attributes || []).forEach(attr => {
+                let value = attr.value;
+                idMap.forEach((newId, oldId) => {
+                    value = value
+                        .replaceAll(`url(#${oldId})`, `url(#${newId})`)
+                        .replaceAll(`#${oldId}`, `#${newId}`);
+                });
+                if (value !== attr.value) node.setAttribute(attr.name, value);
+            });
+        });
+    }
+
+    function forceIndexDrawerVariantVisibility(svg, variant) {
+        const left = svg.querySelector('#VARIANT_LEFT');
+        const right = svg.querySelector('#VARIANT_RIGHT');
+        if (left) left.style.setProperty('display', variant === 'left' ? 'inline' : 'none', 'important');
+        if (right) right.style.setProperty('display', variant === 'right' ? 'inline' : 'none', 'important');
+    }
+
+    function getIndexDrawerVisibleFrameGroup(svg, variant) {
+        const wantedId = variant === 'right' ? 'FRAME_RIGHT' : 'FRAME_LEFT';
+        return svg.querySelector(`#${wantedId}`) || svg.querySelector(`[id$="-${wantedId}"]`);
+    }
+
+    function getIndexDrawerMainFramePaths(svg, variant) {
+        const group = getIndexDrawerVisibleFrameGroup(svg, variant);
+        if (!group) return [];
+        return [...group.querySelectorAll('path')].filter(path => {
+            const d = (path.getAttribute('d') || '').replace(/\s+/g, '');
+            return d.length > 180;
+        });
+    }
+
+    function prepareIndexDrawerFrame(svg, variant) {
+        forceIndexDrawerVariantVisibility(svg, variant);
+
+        const frameGroup = getIndexDrawerVisibleFrameGroup(svg, variant);
+        if (frameGroup) {
+            // The two Illustrator files use .st0 { opacity: .5 } and .st1/.st2
+            // with hard-coded #000 strokes. Remove that inherited dimming here
+            // and let reader-tone variables own both colour and alpha.
+            frameGroup.style.setProperty('opacity', '1', 'important');
+            frameGroup.style.setProperty('display', 'inline', 'important');
+            frameGroup.querySelectorAll('path, line, polyline, polygon, circle, ellipse').forEach(shape => {
+                shape.classList.add('drawer-frame-detail');
+                shape.style.setProperty('fill', 'none', 'important');
+                shape.style.setProperty('stroke', 'var(--index-drawer-frame-stroke)', 'important');
+                shape.style.setProperty('stroke-opacity', '1', 'important');
+                shape.setAttribute('vector-effect', 'non-scaling-stroke');
+            });
+        }
+
+        getIndexDrawerMainFramePaths(svg, variant).forEach(path => {
+            path.classList.add('drawer-frame');
+            path.style.setProperty('fill', 'none', 'important');
+            path.style.setProperty('stroke', 'var(--index-drawer-frame-stroke)', 'important');
+            path.setAttribute('vector-effect', 'non-scaling-stroke');
+        });
+
+        const crackSelectors = variant === 'right'
+            ? ['#CRACK_RIGHT', '.drawer-crack', '.drawer-crack-detail']
+            : ['#CRACK_LEFT', '.drawer-crack', '.drawer-crack-detail'];
+        const seenCracks = new Set();
+        crackSelectors.forEach(selector => {
+            svg.querySelectorAll(selector).forEach(group => {
+                if (seenCracks.has(group)) return;
+                seenCracks.add(group);
+                const shapes = group.matches('path, line, polyline, polygon, circle, ellipse')
+                    ? [group]
+                    : [...group.querySelectorAll('path, line, polyline, polygon, circle, ellipse')];
+                shapes.forEach(shape => {
+                    const detail = shape.classList.contains('drawer-crack-detail') || !!shape.closest('.drawer-crack-detail');
+                    shape.classList.add(detail ? 'drawer-crack-detail' : 'drawer-crack');
+                    shape.style.setProperty(
+                        'stroke',
+                        detail ? 'var(--index-drawer-crack-detail-stroke)' : 'var(--index-drawer-crack-stroke)',
+                        'important'
+                    );
+                    shape.setAttribute('vector-effect', 'non-scaling-stroke');
+                });
+            });
+        });
+    }
+
+    function getIndexDrawerConcreteToneColors() {
+        const tone = clampReaderTone(readerToneValue);
+        if (tone <= READER_WARM_POINT) {
+            const t = tone / READER_WARM_POINT;
+            const frameRgb = readerToneMixArray(
+                READER_PALETTES.paper.lineStrong,
+                READER_PALETTES.warm.lineStrong,
+                t
+            );
+            const detailRgb = readerToneMixArray(
+                READER_PALETTES.paper.muted,
+                READER_PALETTES.warm.muted,
+                t
+            );
+            return {
+                frame: readerRgba(frameRgb, readerToneMix(0.46, 0.58, t)),
+                crack: readerRgba(frameRgb, readerToneMix(0.40, 0.54, t)),
+                detail: readerRgba(detailRgb, readerToneMix(0.28, 0.42, t))
+            };
+        }
+
+        const t = (tone - READER_WARM_POINT) / (100 - READER_WARM_POINT);
+        // Important: night linework targets the NIGHT TEXT colour, not
+        // lineStrong. That produces an unmistakable light-on-dark inversion.
+        const frameRgb = readerToneMixArray(
+            READER_PALETTES.warm.lineStrong,
+            READER_PALETTES.night.text,
+            t
+        );
+        const detailRgb = readerToneMixArray(
+            READER_PALETTES.warm.muted,
+            READER_PALETTES.night.muted,
+            t
+        );
+        return {
+            frame: readerRgba(frameRgb, readerToneMix(0.58, 0.84, t)),
+            crack: readerRgba(frameRgb, readerToneMix(0.54, 0.78, t)),
+            detail: readerRgba(detailRgb, readerToneMix(0.42, 0.66, t))
+        };
+    }
+
+    function syncIndexDrawerToneLinework() {
+        const colors = getIndexDrawerConcreteToneColors();
+
+        document.querySelectorAll(
+            '#index-drawer-svg-handle > svg, #index-drawer-svg-body > svg'
+        ).forEach(svg => {
+            // Illustrator exports put opacity:.5 on VARIANT_* and #000 on
+            // .st1/.st2. Neutralize both at the DOM level rather than relying
+            // on CSS-variable resolution inside SVG presentation attributes.
+            svg.querySelectorAll('[id*="VARIANT_LEFT"], [id*="VARIANT_RIGHT"]').forEach(group => {
+                group.style.setProperty('opacity', '1', 'important');
+            });
+
+            const frameGroups = svg.querySelectorAll('[id*="FRAME_LEFT"], [id*="FRAME_RIGHT"]');
+            frameGroups.forEach(group => {
+                group.style.setProperty('opacity', '1', 'important');
+                group.querySelectorAll('path, line, polyline, polygon, circle, ellipse').forEach(shape => {
+                    shape.style.setProperty('fill', 'none', 'important');
+                    shape.style.setProperty('stroke', colors.frame, 'important');
+                    shape.style.setProperty('stroke-opacity', '1', 'important');
+                    shape.setAttribute('stroke', colors.frame);
+                    shape.setAttribute('vector-effect', 'non-scaling-stroke');
+                });
+            });
+
+            svg.querySelectorAll('.drawer-crack').forEach(shape => {
+                shape.style.setProperty('stroke', colors.crack, 'important');
+                shape.setAttribute('stroke', colors.crack);
+            });
+            svg.querySelectorAll('.drawer-crack-detail').forEach(shape => {
+                shape.style.setProperty('stroke', colors.detail, 'important');
+                shape.setAttribute('stroke', colors.detail);
+            });
+        });
+
+        document.querySelectorAll('.index-drawer-crack-overpass > svg').forEach(svg => {
+            svg.querySelectorAll('.drawer-crack').forEach(shape => {
+                shape.style.setProperty('stroke', colors.crack, 'important');
+                shape.setAttribute('stroke', colors.crack);
+            });
+            svg.querySelectorAll('.drawer-crack-detail').forEach(shape => {
+                shape.style.setProperty('stroke', colors.detail, 'important');
+                shape.setAttribute('stroke', colors.detail);
+            });
+        });
+    }
+
+    function makeIndexDrawerMaskDataUri(pathD, viewBox) {
+        if (!pathD) return '';
+        const markup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="none"><path d="${pathD.replaceAll('&','&amp;').replaceAll('"','&quot;')}" fill="white"/></svg>`;
+        return `url("data:image/svg+xml,${encodeURIComponent(markup)}")`;
+    }
+
+    function ensureIndexDrawerFrostLayer(host) {
+        if (!host) return null;
+        let layer = host.querySelector(':scope > .index-drawer-frost-mask');
+        if (!layer) {
+            layer = document.createElement('div');
+            layer.className = 'index-drawer-frost-mask';
+            layer.setAttribute('aria-hidden', 'true');
+            host.prepend(layer);
+        }
+        return layer;
+    }
+
+    function applyIndexDrawerFrostMask(host, part, variant, bodyUnits = null) {
+        if (!host) return;
+        const pathD = INDEX_DRAWER_VARIANT_PATHS[variant];
+        if (!pathD) return;
+        const layer = ensureIndexDrawerFrostLayer(host);
+        const viewBox = part === 'handle'
+            ? `0 0 ${INDEX_DRAWER_SVG_WIDTH} ${INDEX_DRAWER_SVG_HANDLE_HEIGHT}`
+            : `0 ${INDEX_DRAWER_SVG_HANDLE_HEIGHT} ${INDEX_DRAWER_SVG_WIDTH} ${(bodyUnits || getIndexDrawerBodyViewBoxHeight()).toFixed(2)}`;
+        const mask = makeIndexDrawerMaskDataUri(pathD, viewBox);
+        layer.style.maskImage = mask;
+        layer.style.webkitMaskImage = mask;
+        layer.style.maskSize = '100% 100%';
+        layer.style.webkitMaskSize = '100% 100%';
+        layer.style.maskRepeat = 'no-repeat';
+        layer.style.webkitMaskRepeat = 'no-repeat';
+        layer.style.maskPosition = '0 0';
+        layer.style.webkitMaskPosition = '0 0';
+    }
+
+    function syncIndexDrawerFrostMasks(bodyUnits = null) {
+        const variant = chooseIndexDrawerSvgVariant();
+        applyIndexDrawerFrostMask(document.getElementById('index-drawer-svg-handle'), 'handle', variant, bodyUnits);
+        applyIndexDrawerFrostMask(document.getElementById('index-drawer-svg-body'), 'body', variant, bodyUnits);
+    }
+
+    function prepareIndexDrawerSvgClone(sourceRoot, part, variant) {
+        const svg = document.importNode(sourceRoot, true);
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+
+        // These are now two separate Illustrator SVG files. Their exported
+        // .st0/.st1/.st2 rules hard-code opacity and black strokes, so remove
+        // those style blocks from the inline clone before applying tone-aware
+        // stroke variables. Geometry and IDs remain untouched.
+        svg.querySelectorAll(':scope > style').forEach(style => style.remove());
+        prepareIndexDrawerFrame(svg, variant);
+
+        if (part === 'handle') {
+            svg.setAttribute('viewBox', '0 0 1600 60');
+        } else {
+            svg.setAttribute('viewBox', '0 60 1600 700');
+        }
+
+        prefixSvgIds(svg, `index-drawer-${part}`);
+        return svg;
+    }
+
+
+    // v181 · crack-overpass layer
+    // Archive stacks are intentionally raised above the opened Index Drawer
+    // (.file-stack.elevated-z = 20001). That means cracks drawn only inside
+    // #index-drawer are visually covered by the archive-doc papers.
+    //
+    // Keep the paper/fill SVG inside the drawer, but duplicate ONLY the crack
+    // geometry into a global fixed layer above the raised archive stacks.
+    function ensureIndexDrawerCrackOverpassHosts() {
+        let handle = document.getElementById('index-drawer-crack-overpass-handle');
+        let body = document.getElementById('index-drawer-crack-overpass-body');
+
+        if (!handle) {
+            handle = document.createElement('div');
+            handle.id = 'index-drawer-crack-overpass-handle';
+            handle.className = 'index-drawer-crack-overpass';
+            handle.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(handle);
+        }
+
+        if (!body) {
+            body = document.createElement('div');
+            body.id = 'index-drawer-crack-overpass-body';
+            body.className = 'index-drawer-crack-overpass';
+            body.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(body);
+        }
+
+        return { handle, body };
+    }
+
+    function prepareIndexDrawerCrackOnlyClone(sourceRoot, part, variant) {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+
+        // Only duplicate deliberately separated crack geometry. v191 duplicated
+        // FRAME_LEFT / FRAME_RIGHT themselves, which drew the same closed slab
+        // outline twice and created the apparent "two candidates overlaid" look.
+        const style = sourceRoot.querySelector(':scope > style');
+        if (style) svg.appendChild(document.importNode(style, true));
+        const defs = sourceRoot.querySelector(':scope > defs');
+        if (defs) svg.appendChild(document.importNode(defs, true));
+
+        const ids = variant === 'left' ? ['#CRACK_LEFT'] : ['#CRACK_RIGHT'];
+        const selectors = [...ids, '.drawer-crack', '.drawer-crack-detail'];
+        const seen = new Set();
+        selectors.forEach(selector => {
+            sourceRoot.querySelectorAll(selector).forEach(node => {
+                if (seen.has(node)) return;
+                seen.add(node);
+                svg.appendChild(document.importNode(node, true));
+            });
+        });
+
+        svg.querySelectorAll('path, line, polyline, polygon, circle, ellipse').forEach(shape => {
+            if (shape.closest('defs')) return;
+            const detail = shape.classList.contains('drawer-crack-detail') || !!shape.closest('.drawer-crack-detail');
+            shape.classList.add(detail ? 'drawer-crack-detail' : 'drawer-crack');
+            shape.style.setProperty(
+                'stroke',
+                detail ? 'var(--index-drawer-crack-detail-stroke)' : 'var(--index-drawer-crack-stroke)',
+                'important'
+            );
+            shape.setAttribute('vector-effect', 'non-scaling-stroke');
+        });
+
+        if (part === 'handle') {
+            svg.setAttribute('viewBox', '0 0 1600 60');
+        } else {
+            svg.setAttribute('viewBox', '0 60 1600 700');
+        }
+
+        prefixSvgIds(svg, `index-drawer-overpass-${part}`);
+        return svg;
+    }
+
+
+    function positionIndexDrawerCrackOverpassHost(host, sourceHost) {
+        if (!host || !sourceHost) return;
+        const rect = sourceHost.getBoundingClientRect();
+
+        host.style.left = `${rect.left}px`;
+        host.style.top = `${rect.top}px`;
+        host.style.width = `${Math.max(0, rect.width)}px`;
+        host.style.height = `${Math.max(0, rect.height)}px`;
+        host.style.display = rect.width > 0 && rect.height > 0 ? 'block' : 'none';
+    }
+
+    function syncIndexDrawerCrackOverpass() {
+        syncIndexDrawerSvgBodyViewBox();
+        const handleSource = document.getElementById('index-drawer-svg-handle');
+        const bodySource = document.getElementById('index-drawer-svg-body');
+        const handle = document.getElementById('index-drawer-crack-overpass-handle');
+        const body = document.getElementById('index-drawer-crack-overpass-body');
+
+        positionIndexDrawerCrackOverpassHost(handle, handleSource);
+        positionIndexDrawerCrackOverpassHost(body, bodySource);
+    }
+
+    function syncIndexDrawerCrackOverpassThroughTransition() {
+        [0, 16, 70, 140, 240, 360, 460].forEach(delay => {
+            window.setTimeout(syncIndexDrawerCrackOverpass, delay);
+        });
+    }
+
+    // v184 · file:// fallback loader
+    // Browsers intentionally block fetch() from local file pages (opaque origin),
+    // producing the exact "Failed to fetch" seen in drawer-debug mode. An external
+    // SVG can still be displayed as an image resource, so local Illustrator testing
+    // gets a visual fallback without requiring a web server.
+    function makeIndexDrawerExternalImageWrapper(part, variant) {
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.setAttribute('focusable', 'false');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.setAttribute('class', 'index-drawer-external-svg-fallback');
+        svg.setAttribute('viewBox', part === 'handle' ? '0 0 1600 60' : '0 60 1600 700');
+
+        const image = document.createElementNS(SVG_NS, 'image');
+        const href = `assets/index-drawer-${variant}.svg`;
+        image.setAttribute('href', href);
+        image.setAttributeNS('http://www.w3.org/1999/xlink', 'href', href);
+        image.setAttribute('x', '0');
+        image.setAttribute('y', '0');
+        image.setAttribute('width', '1600');
+        image.setAttribute('height', String(INDEX_DRAWER_SVG_MASTER_HEIGHT));
+        image.setAttribute('preserveAspectRatio', 'none');
+        svg.appendChild(image);
+        return { svg, image };
+    }
+
+
+    function loadIndexDrawerSvgImageFallback(drawer, handleHost, bodyHost, reason = '') {
+        const variant = chooseIndexDrawerSvgVariant();
+        const handleFallback = makeIndexDrawerExternalImageWrapper('handle', variant);
+        const bodyFallback = makeIndexDrawerExternalImageWrapper('body', variant);
+
+        handleHost.replaceChildren(handleFallback.svg);
+        bodyHost.replaceChildren(bodyFallback.svg);
+        syncIndexDrawerFrostMasks();
+        drawer.dataset.svgVariant = variant;
+        drawer.dataset.svgLoader = 'image';
+        drawer.classList.add('index-drawer-svg-ready');
+        syncIndexDrawerAdaptiveHeightThroughTransition();
+        syncIndexDrawerSvgBodyViewBox();
+        window.setTimeout(syncIndexDrawerSvgBodyViewBox, 0);
+        window.setTimeout(syncIndexDrawerSvgBodyViewBox, 80);
+
+        let loaded = 0;
+        let failed = false;
+        const reportLoaded = () => {
+            loaded += 1;
+            if (loaded >= 2 && !failed) {
+                setIndexDrawerSvgDebug(
+                    `index-drawer.svg IMAGE FALLBACK OK\nfetch blocked: ${reason || 'unknown'}\nprotocol: ${location.protocol}\nhandle image: YES\nbody image: YES\nNOTE: local fallback displays the authored SVG, but JS cannot edit its internal variant groups.`,
+                    true
+                );
+            }
+        };
+        const reportError = () => {
+            failed = true;
+            setIndexDrawerSvgDebug(
+                `index-drawer.svg IMAGE FALLBACK FAILED\nfetch blocked: ${reason || 'unknown'}\nprotocol: ${location.protocol}\nCheck that assets/index-drawer.svg exists next to the deployed index.html.`,
+                false
+            );
+        };
+
+        [handleFallback.image, bodyFallback.image].forEach(img => {
+            img.addEventListener('load', reportLoaded, { once: true });
+            img.addEventListener('error', reportError, { once: true });
+        });
+    }
+
+    async function loadIndexDrawerSvg() {
+        const drawer = document.getElementById('index-drawer');
+        const handleHost = document.getElementById('index-drawer-svg-handle');
+        const bodyHost = document.getElementById('index-drawer-svg-body');
+        if (!drawer || !handleHost || !bodyHost) return;
+
+        ensureIndexDrawerScrollLayer();
+
+        // Opening index.html directly from Finder / Explorer gives a file:// URL.
+        // fetch() is blocked there by browser security even when the SVG exists.
+        if (location.protocol === 'file:') {
+            loadIndexDrawerSvgImageFallback(drawer, handleHost, bodyHost, 'file:// blocks fetch()');
+            return;
+        }
+
+        try {
+            const variant = chooseIndexDrawerSvgVariant();
+            const sourceRoot = await fetchIndexDrawerSvgSource(variant);
+
+            handleHost.replaceChildren(prepareIndexDrawerSvgClone(sourceRoot, 'handle', variant));
+            bodyHost.replaceChildren(prepareIndexDrawerSvgClone(sourceRoot, 'body', variant));
+            syncIndexDrawerFrostMasks();
+
+            const overpass = ensureIndexDrawerCrackOverpassHosts();
+            overpass.handle.replaceChildren(prepareIndexDrawerCrackOnlyClone(sourceRoot, 'handle', variant));
+            overpass.body.replaceChildren(prepareIndexDrawerCrackOnlyClone(sourceRoot, 'body', variant));
+            syncIndexDrawerToneLinework();
+            syncIndexDrawerSvgBodyViewBox();
+            syncIndexDrawerCrackOverpassThroughTransition();
+
+            drawer.dataset.svgVariant = variant;
+            drawer.dataset.svgLoader = 'fetch';
+            drawer.classList.add('index-drawer-svg-ready');
+            syncIndexDrawerAdaptiveHeightThroughTransition();
+            if (drawerSvgDebugMode) {
+                const hasHandleTest = !!handleHost.querySelector('[id*="DRAWER_COMMON_TEST"]');
+                const hasBodyTest = !!bodyHost.querySelector('[id*="DRAWER_COMMON_TEST"]');
+                setIndexDrawerSvgDebug(
+                    `index-drawer-${variant}.svg FETCH OK\nDRAWER_COMMON_TEST: ${hasHandleTest && hasBodyTest ? 'YES' : 'NO'}\nhandle clone: ${hasHandleTest ? 'YES' : 'NO'}\nbody clone: ${hasBodyTest ? 'YES' : 'NO'}\nvariant: ${variant}`,
+                    hasHandleTest && hasBodyTest
+                );
+            }
+        } catch (error) {
+            console.warn('[Index Drawer SVG] fetch failed; trying image fallback:', error);
+            loadIndexDrawerSvgImageFallback(drawer, handleHost, bodyHost, error.message || String(error));
+        }
+    }
+
+    function renderIndexDrawer() {
+        // v145: no procedural fracture generation here anymore.
+        // All editable geometry comes from assets/index-drawer-left.svg / index-drawer-right.svg.
+        loadIndexDrawerSvg();
+    }
+
+
+    function computeArchiveDocCornerCuts(w, h, rng, severity = 'light') {
+        const maxCut = Math.min(w * 0.14, h * 0.075, severity === 'medium' ? 14 : 11.5);
+        const minCut = Math.min(maxCut, severity === 'medium' ? 6.5 : 4.2);
+        const tl = Math.max(0, minCut + rng() * Math.max(1.2, maxCut - minCut));
+        const tr = Math.max(0, minCut + rng() * Math.max(1.2, maxCut - minCut));
+        return { tl, tr };
+    }
+
+    function setArchiveDocClipPath(doc, w, h, cuts) {
+        if (!doc || w < 2 || h < 2 || !cuts) return;
+        const tl = Math.max(0, Math.min(cuts.tl || 0, w * 0.22, h * 0.16));
+        const tr = Math.max(0, Math.min(cuts.tr || 0, w * 0.22, h * 0.16));
+        const polygon = [
+            `${tl.toFixed(2)}px 0px`,
+            `${(w - tr).toFixed(2)}px 0px`,
+            `${w.toFixed(2)}px ${tr.toFixed(2)}px`,
+            `${w.toFixed(2)}px ${h.toFixed(2)}px`,
+            `0px ${h.toFixed(2)}px`,
+            `0px ${tl.toFixed(2)}px`
+        ].join(', ');
+        doc.style.clipPath = `polygon(${polygon})`;
+        doc.style.webkitClipPath = `polygon(${polygon})`;
+        doc.dataset.archiveCutTl = tl.toFixed(2);
+        doc.dataset.archiveCutTr = tr.toFixed(2);
+    }
+
+    function ensureArchiveDocCornerCuts(doc, label, severity = 'light', dims = null) {
+        if (!doc) return { tl: 0, tr: 0 };
+        const rect = dims || doc.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        if (w < 10 || h < 10) return { tl: 0, tr: 0 };
+
+        let tl = parseFloat(doc.dataset.archiveCutTl || '');
+        let tr = parseFloat(doc.dataset.archiveCutTr || '');
+        if (!Number.isFinite(tl) || !Number.isFinite(tr)) {
+            const rng = rngFor(`${label}-cornercuts-v180`);
+            const cuts = computeArchiveDocCornerCuts(w, h, rng, severity);
+            tl = cuts.tl;
+            tr = cuts.tr;
+        }
+        const cuts = { tl, tr };
+        setArchiveDocClipPath(doc, w, h, cuts);
+        return cuts;
+    }
+
+    function renderArchiveBaseCutOutline(doc, label, severity = 'light') {
+        if (!doc) return;
+        doc.querySelectorAll(':scope > .ruin-fracture-archive-base').forEach(node => node.remove());
+
+        const rect = doc.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        if (w < 10 || h < 10) return;
+
+        const cuts = ensureArchiveDocCornerCuts(doc, label, severity, rect);
+        const cutTL = cuts.tl || 0;
+        const cutTR = cuts.tr || 0;
+
+        const svg = makeSvg('ruin-fracture-archive-base');
+        setViewBox(svg, w, h);
+
+        const tlTop = { x: Math.max(0.5, cutTL), y: 0.5 };
+        const tlLeft = { x: 0.5, y: Math.max(0.5, cutTL) };
+        const trTop = { x: Math.min(w - 0.5, w - 0.5 - cutTR), y: 0.5 };
+        const trRight = { x: w - 0.5, y: Math.max(0.5, cutTR) };
+        const br = { x: w - 0.5, y: h - 0.5 };
+        const bl = { x: 0.5, y: h - 0.5 };
+
+        addPolyline(
+            svg,
+            [tlLeft, tlTop, trTop, trRight, br, bl, tlLeft],
+            'ruin-fracture-border ruin-fracture-archive-base-line',
+            0.86
+        );
+
+        doc.appendChild(svg);
+        doc.classList.add('archive-cut-doc');
+    }
+
+    function applyArchiveCornerCuts() {
+        const recordDocs = [...document.querySelectorAll('#stack-record .archive-doc')];
+        const gardenDocs = [...document.querySelectorAll('#stack-garden .archive-doc')];
+
+        recordDocs.forEach((doc, index) => {
+            renderArchiveBaseCutOutline(doc, `record-doc-${index}-v181`, 'light');
+        });
+        gardenDocs.forEach((doc, index) => {
+            renderArchiveBaseCutOutline(doc, `garden-doc-${index}-v181`, 'light');
+        });
+    }
+
+    function getArchiveDocEdgePoints(w, h, cuts = {}) {
+        const cutTL = cuts.tl || 0;
+        const cutTR = cuts.tr || 0;
+        const tl = { x: 0.5, y: 0.5 };
+        const tr = { x: w - 0.5, y: 0.5 };
+        const br = { x: w - 0.5, y: h - 0.5 };
+        const bl = { x: 0.5, y: h - 0.5 };
+        const tlTop = cutTL > 0.5 ? { x: cutTL, y: 0.5 } : tl;
+        const tlLeft = cutTL > 0.5 ? { x: 0.5, y: cutTL } : tl;
+        const trTop = cutTR > 0.5 ? { x: w - 0.5 - cutTR, y: 0.5 } : tr;
+        const trRight = cutTR > 0.5 ? { x: w - 0.5, y: cutTR } : tr;
+        return { tl, tr, br, bl, tlTop, tlLeft, trTop, trRight, cutTL, cutTR };
+    }
+
+    function renderArchiveDamageProfile(doc, label, profile = {}) {
+        if (!doc) return;
+
+        clearTargetOverlays(doc);
+        doc.querySelectorAll(':scope > .ruin-fracture-archive-base').forEach(node => node.remove());
+        const rect = doc.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
+        if (w < 10 || h < 10) return;
+
+        const severity = profile.severity || 'light';
+        const cuts = ensureArchiveDocCornerCuts(doc, label, severity, rect);
+        const pts = getArchiveDocEdgePoints(w, h, cuts);
+        const { br, bl, tlTop, tlLeft, trTop, trRight, cutTL, cutTR } = pts;
+
+        const svg = makeSvg('ruin-fracture-archive-doc');
+        setViewBox(svg, w, h);
+        const rng = rngFor(label);
+        const side = profile.side || ['top', 'right', 'left'][Math.floor(rng() * 3)];
+        const opacity = profile.opacity ?? 0.86;
+        const addReturnLine = profile.addReturnLine === true;
+
+        function clean(a, b, alpha = opacity) {
+            addPolyline(svg, [a, b], 'ruin-fracture-border', alpha);
+        }
+
+        if (cutTL > 0.5) clean(tlLeft, tlTop);
+        if (cutTR > 0.5) clean(trTop, trRight);
+
+        let chip = null;
+        if (side === 'top') {
+            const depth = profile.depth ?? (severity === 'medium' ? 5.6 + rng() * 2.8 : 2.8 + rng() * 2.4);
+            const width = (profile.width ?? (severity === 'medium' ? 18 + rng() * 14 : 8 + rng() * 8)) * 0.60;
+            chip = addNaturalChipSegment(svg, tlTop, trTop, rng, {
+                width,
+                depth,
+                t: profile.t ?? (0.22 + rng() * 0.56),
+                normalSign: 1,
+                opacity,
+                addReturnLine,
+                returnInset: profile.returnInset ?? Math.max(0.65, depth * 0.16),
+                returnOpacity: profile.returnOpacity ?? 0.54
+            });
+            clean(trRight, br); clean(br, bl); clean(bl, tlLeft);
+        } else if (side === 'right') {
+            const depth = profile.depth ?? (severity === 'medium' ? 5.0 + rng() * 2.4 : 2.3 + rng() * 1.8);
+            const width = profile.width ?? (severity === 'medium' ? 18 + rng() * 10 : 10 + rng() * 10);
+            chip = addNaturalChipSegment(svg, trRight, br, rng, {
+                width,
+                depth,
+                t: profile.t ?? (0.22 + rng() * 0.58),
+                normalSign: 1,
+                opacity,
+                addReturnLine,
+                returnInset: profile.returnInset ?? Math.max(0.65, depth * 0.16),
+                returnOpacity: profile.returnOpacity ?? 0.54
+            });
+            clean(br, bl); clean(bl, tlLeft); clean(tlLeft, tlTop); clean(tlTop, trTop);
+        } else {
+            const depth = profile.depth ?? (severity === 'medium' ? 5.0 + rng() * 2.4 : 2.3 + rng() * 1.8);
+            const width = profile.width ?? (severity === 'medium' ? 18 + rng() * 10 : 10 + rng() * 10);
+            chip = addNaturalChipSegment(svg, bl, tlLeft, rng, {
+                width,
+                depth,
+                t: 1 - (profile.t ?? (0.22 + rng() * 0.58)),
+                normalSign: 1,
+                opacity,
+                addReturnLine,
+                returnInset: profile.returnInset ?? Math.max(0.65, depth * 0.16),
+                returnOpacity: profile.returnOpacity ?? 0.54
+            });
+            clean(tlTop, trTop); clean(trTop, trRight); clean(trRight, br); clean(br, bl);
+        }
+
+        doc.appendChild(svg);
+        doc.classList.add('fracture-doc');
+        doc.dataset.fractureSeverity = severity;
+        return chip;
+    }
+
+    function renderArchiveDoc(doc, label, severity = 'light') {
+        return renderArchiveDamageProfile(doc, label, { severity });
+    }
+
+
+    function clearArchiveDamage() {
+        document.querySelectorAll('.archive-doc').forEach(doc => {
+            doc.classList.remove('fracture-doc', 'archive-misaligned');
+            doc.removeAttribute('data-fracture-severity');
+            doc.style.removeProperty('--archive-misalign-x');
+            doc.style.removeProperty('--archive-misalign-y');
+            doc.style.removeProperty('--archive-misalign-rot');
+            clearTargetOverlays(doc);
+            doc.querySelectorAll(':scope > .ruin-fracture-archive-base').forEach(node => node.remove());
+        });
+    }
+
+    function applyArchiveDamage() {
+        clearArchiveDamage();
+        applyArchiveCornerCuts();
+
+        const recordDocs = [...document.querySelectorAll('#stack-record .archive-doc')];
+        const gardenDocs = [...document.querySelectorAll('#stack-garden .archive-doc')];
+
+        const recordRng = rngFor('archive-record-selection-v185');
+        const gardenRng = rngFor('archive-garden-selection-v185');
+        const recordShiftRng = rngFor('archive-record-misalignment-v185');
+        const gardenShiftRng = rngFor('archive-garden-misalignment-v185');
+
+        // v185 · archive-doc wear system
+        // 1) at least one refresh-stable three-sheet damage cluster
+        // 2) additional shallow / wide side chips on random sheets
+        // 3) keep earlier occasional misregistration alive
+        function applyMisalignment(doc, rng, probability) {
+            if (!doc || rng() >= probability) return;
+            const x = (rng() - 0.5) * 7.0;
+            const y = (rng() - 0.5) * 5.0;
+            const rot = 0;
+            doc.classList.add('archive-misaligned');
+            doc.style.setProperty('--archive-misalign-x', `${x.toFixed(2)}px`);
+            doc.style.setProperty('--archive-misalign-y', `${y.toFixed(2)}px`);
+            doc.style.setProperty('--archive-misalign-rot', `${rot.toFixed(3)}deg`);
+        }
+
+        function randomize(arr, rng) {
+            const copy = arr.slice();
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function pickTripletIndices(count, rng) {
+            if (count <= 0) return [];
+            if (count === 1) return [0];
+            if (count === 2) return [0, 1];
+            const center = 1 + Math.floor(rng() * (count - 2));
+            return [center - 1, center, center + 1];
+        }
+
+        function applyTripletCluster(docs, keyPrefix, rng) {
+            if (!docs.length) return new Set();
+            const chosen = new Set();
+            const indices = pickTripletIndices(docs.length, rng);
+            const sideRoll = rng();
+            const side = sideRoll < 0.36 ? 'top' : (sideRoll < 0.68 ? 'left' : 'right');
+            const sharedT = 0.24 + rng() * 0.52;
+            const baseWidth = side === 'top' ? 20 + rng() * 14 : 18 + rng() * 16;
+            const baseDepth = side === 'top' ? 4.8 + rng() * 2.6 : 3.6 + rng() * 2.2;
+            const scales = indices.length === 3 ? [0.66, 1.0, 0.72] : indices.length === 2 ? [1.0, 0.72] : [1.0];
+
+            indices.forEach((index, i) => {
+                const doc = docs[index];
+                if (!doc) return;
+                const scale = scales[i] ?? 0.72;
+                renderArchiveDamageProfile(doc, `${keyPrefix}-${index}-cluster-v185`, {
+                    severity: scale > 0.9 ? 'medium' : 'light',
+                    side,
+                    t: Math.max(0.18, Math.min(0.82, sharedT + (rng() - 0.5) * 0.035)),
+                    width: baseWidth * (0.88 + scale * 0.42),
+                    depth: baseDepth * (0.74 + scale * 0.38),
+                    opacity: 0.86,
+                    addReturnLine: false,
+                    returnInset: Math.max(0.6, baseDepth * 0.14 * scale),
+                    returnOpacity: 0.48
+                });
+                chosen.add(index);
+            });
+            return chosen;
+        }
+
+        function applyRandomSideChips(docs, keyPrefix, rng, alreadyDamaged, probability) {
+            docs.forEach((doc, index) => {
+                if (!doc || alreadyDamaged.has(index) || rng() >= probability) return;
+                const side = rng() < 0.5 ? 'left' : 'right';
+                renderArchiveDamageProfile(doc, `${keyPrefix}-${index}-sidechip-v185`, {
+                    severity: 'light',
+                    side,
+                    t: 0.20 + rng() * 0.60,
+                    width: 14 + rng() * 20,
+                    depth: 1.8 + rng() * 1.9,
+                    opacity: 0.82,
+                    addReturnLine: false,
+                    returnInset: 0.65 + rng() * 0.35,
+                    returnOpacity: 0.44
+                });
+                alreadyDamaged.add(index);
+            });
+        }
+
+        recordDocs.forEach(doc => applyMisalignment(doc, recordShiftRng, 0.10));
+        gardenDocs.forEach(doc => applyMisalignment(doc, gardenShiftRng, 0.12));
+
+        const damagedRecords = applyTripletCluster(recordDocs, 'record-doc', recordRng);
+        applyRandomSideChips(recordDocs, 'record-doc', recordRng, damagedRecords, 0.12);
+
+        // keep a small chance of one extra ordinary worn sheet so the stack does
+        // not look too systematically authored.
+        const recordCandidates = randomize(
+            recordDocs.map((doc, index) => ({ doc, index })).filter(({ index }) => !damagedRecords.has(index)),
+            recordRng
+        );
+        if (recordCandidates.length && recordRng() < 0.18) {
+            const target = recordCandidates[0];
+            renderArchiveDamageProfile(target.doc, `record-doc-${target.index}-extra-v185`, {
+                severity: recordRng() < 0.30 ? 'medium' : 'light',
+                side: ['top', 'left', 'right'][Math.floor(recordRng() * 3)],
+                t: 0.20 + recordRng() * 0.60,
+                addReturnLine: false,
+                returnOpacity: 0.46
+            });
+            damagedRecords.add(target.index);
+        }
+
+        if (gardenDocs.length) {
+            const damagedGarden = applyTripletCluster(gardenDocs, 'garden-doc', gardenRng);
+            applyRandomSideChips(gardenDocs, 'garden-doc', gardenRng, damagedGarden, 0.16);
+        }
+    }
+
+    function renderAllStatic() {
+        renderTopPerspectiveLines();
+        renderMainFrame();
+        renderCompass();
+        renderIndexDrawer();
+    }
+
+    function boot() {
+        renderAllStatic();
+
+        const frame = document.getElementById('main-viewport-frame');
+        const compass = document.querySelector('.compass-pentagon-outer');
+        const drawer = document.getElementById('index-drawer');
+
+        if ('ResizeObserver' in window) {
+            let timer = 0;
+            const ro = new ResizeObserver(() => {
+                window.clearTimeout(timer);
+                timer = window.setTimeout(() => {
+                    syncIndexDrawerAdaptiveHeight();
+                    renderAllStatic();
+                }, 100);
+            });
+            if (frame) ro.observe(frame);
+            if (compass) ro.observe(compass);
+            if (drawer) ro.observe(drawer);
+        } else {
+            let resizeTimer = 0;
+            window.addEventListener('resize', () => {
+                window.clearTimeout(resizeTimer);
+                resizeTimer = window.setTimeout(() => {
+                    syncIndexDrawerAdaptiveHeight();
+                    renderAllStatic();
+                }, 120);
+            });
+        }
+
+        if (drawer && 'MutationObserver' in window) {
+            const mo = new MutationObserver(() => {
+                window.setTimeout(renderIndexDrawer, 120);
+                syncIndexDrawerAdaptiveHeightThroughTransition();
+                syncIndexDrawerCrackOverpassThroughTransition();
+            });
+            mo.observe(drawer, { attributes: true, attributeFilter: ['class', 'style'] });
+        }
+
+        window.addEventListener('ruinreaderchange', syncIndexDrawerToneLinework);
+        syncIndexDrawerToneLinework();
+
+        const compassModule = document.getElementById('global-compass-module');
+        if (compassModule && 'MutationObserver' in window) {
+            const mo = new MutationObserver(() => {
+                window.setTimeout(renderCompass, 420);
+            });
+            mo.observe(compassModule, { attributes: true, attributeFilter: ['class'] });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+
+    return {
+        seed: sessionSeed,
+        renderTopPerspectiveLines,
+        renderMainFrame,
+        renderCompass,
+        renderIndexDrawer,
+        syncIndexDrawerAdaptiveHeight,
+        syncIndexDrawerAdaptiveHeightThroughTransition,
+        applyArchiveDamage
+    };
+})();
+
+
 function buildFileStacks() {
     const stackGarden = document.getElementById('stack-garden');
     const stackRecord = document.getElementById('stack-record');
@@ -8043,6 +10607,12 @@ function buildFileStacks() {
 
     syncLanguageSubtree(stackGarden);
     syncLanguageSubtree(stackRecord);
+
+    // v96: randomly weather a sparse subset of archive sheets.  The session
+    // seed keeps this exact selection stable until the next page load.
+    requestAnimationFrame(() => {
+        RuinFractureSystem.applyArchiveDamage();
+    });
 }
 
 document.addEventListener('click', (e) => {
@@ -8844,6 +11414,13 @@ function switchLanguage(targetLang) {
     document.documentElement.lang = targetLang === 'ja' ? 'ja' : targetLang === 'en' ? 'en' : 'zh-Hans';
     if (vault.document_title) document.title = vault.document_title;
     window.handleDocumentLanguageChange?.(targetLang);
+
+    // v188 · a language switch may turn a fitting drawer into an overflowing
+    // one (or vice versa). Always restart from the top; CSS then bottom-anchors
+    // the index automatically when the translated copy fits.
+    const drawerScrollLayer = document.getElementById('index-drawer-scroll-layer');
+    if (drawerScrollLayer) drawerScrollLayer.scrollTop = 0;
+    RuinFractureSystem?.syncIndexDrawerAdaptiveHeightThroughTransition?.();
 
     const elementsToTranslate = document.querySelectorAll('[data-i18n]');
 
